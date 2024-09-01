@@ -12,7 +12,7 @@ pub use state::*;
 declare_id!("9DjQebxAWrLb2kPDx7UxeguqcLbvnGw2QD8QwjuU6Qci");
 
 #[program]
-pub mod leaderboard_payouts {
+pub mod leaderboard_rewards {
     use super::*;
 
     pub fn initialize(ctx: Context<Initialize>, period_length: i64, top_spots: u8) -> Result<()> {
