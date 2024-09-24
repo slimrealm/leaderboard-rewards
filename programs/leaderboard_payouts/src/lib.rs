@@ -1,22 +1,23 @@
 use anchor_lang::prelude::*;
 
-pub mod constants;
+// pub mod constants;
 pub mod error;
 pub mod instructions;
 pub mod state;
 
-pub use constants::*;
+// pub use constants::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("9DjQebxAWrLb2kPDx7UxeguqcLbvnGw2QD8QwjuU6Qci");
+declare_id!("3KzaW7f5pHYpE2YbS9qXPjUzEt4MavPfcpaCfcdQrkAv");
 
 #[program]
-pub mod leaderboard_rewards {
+pub mod leaderboard_payouts {
     use super::*;
 
     pub fn initialize(ctx: Context<Initialize>, period_length: i64, top_spots: u8) -> Result<()> {
-        instructions::initialize:(ctx, period_length, top_spots)
+        ctx.accounts.initialize(period_length, top_spots)
+        //Ok(())
     }
 
     //  pub fn update_config() -> Result<()> {

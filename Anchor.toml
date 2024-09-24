@@ -5,7 +5,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-leaderboard_rewards = "9DjQebxAWrLb2kPDx7UxeguqcLbvnGw2QD8QwjuU6Qci"
+leaderboard_payouts = "3KzaW7f5pHYpE2YbS9qXPjUzEt4MavPfcpaCfcdQrkAv"
 
 [registry]
 url = "https://api.apr.dev"

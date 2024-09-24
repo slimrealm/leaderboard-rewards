@@ -13,5 +13,5 @@ pub use initialize::*;
 // pub mod update_score;
 // pub use update_score::*;
 
-// pub mod distribute_rewards;
-// pub use distribute_rewards::*;
+// pub mod distribute_payouts;
+// pub use distribute_payouts::*;
