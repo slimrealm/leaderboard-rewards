@@ -10,4 +10,6 @@ pub enum LeaderboardError {
     PeriodEnded,
     #[msg("Period has not ended yet")]
     PeriodNotEnded,
+    #[msg("Account is already initialized")]
+    AccountAlreadyInitialized,
 }

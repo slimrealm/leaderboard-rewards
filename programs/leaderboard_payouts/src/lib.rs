@@ -9,7 +9,7 @@ pub mod state;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("3KzaW7f5pHYpE2YbS9qXPjUzEt4MavPfcpaCfcdQrkAv");
+declare_id!("Cap8NdXBQ7GbSVw9MGnGSgWEjKLnDww33REjmViQGgo5");
 
 #[program]
 pub mod leaderboard_payouts {
@@ -29,6 +29,8 @@ pub mod leaderboard_payouts {
     // pub fn end_period(ctx: Context<EndPeriod>) -> Result<()> {
     // }
 
-    // pub fn fund_treasury() -> Result<()> {
+    // pub fn fund_treasury(ctx: Context<FundTreasury>, amount: u64) -> Result<()> {
+    //     ctx.accounts.fund_treasury(amount)
+    // Ok(())
     // }
 }
