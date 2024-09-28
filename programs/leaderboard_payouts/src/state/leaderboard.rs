@@ -38,11 +38,8 @@ pub struct Leaderboard {
     #[max_len(100)]
     pub scores: Vec<Score>,
     pub is_initialized: bool,
-    // pub score: Score,
     // #[max_len(10)]
     // pub historical_data: Vec<HistoricalPeriod>,
 }
 
-// impl Space for Leaderboard {
-//     const INIT_SPACE: usize = 8 + 32 + (8*2) + 1 + (4 + (32 + 8)*100)/*scores*/ = 4061 --> rent: 0.02915544 SOL at last check
-// }
+// Space should be 4061: usize = 8 + 32 + (8*2) + 1 + (4 + (32 + 8)*100)/*scores*/ = 4061 --> rent: 0.02915544 SOL at last check

@@ -1,4 +1,4 @@
-use crate::{error::LeaderboardError, state::Leaderboard, Score};
+use crate::{error::LeaderboardError, state::Leaderboard, Score, Treasury};
 use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
@@ -18,8 +18,7 @@ pub struct Initialize<'info> {
         seeds = [b"treasury", admin.key().as_ref()],
         bump 
     )]
-    /// CHECK:  This is safe
-    pub treasury: AccountInfo<'info>,
+    pub treasury: Account<'info, Treasury>,
     #[account(mut)]
     pub admin: Signer<'info>,
     pub system_program: Program<'info, System>,
@@ -43,9 +42,6 @@ impl<'info> Initialize<'info> {
             scores: initialized_scores,
             is_initialized: true
         });
-        // self.treasury.set_inner(Treasury {
-        //     balance: 0,
-        // });
         Ok(())
     }
 }

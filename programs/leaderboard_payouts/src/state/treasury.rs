@@ -1,11 +1,7 @@
-// use anchor_lang::prelude::*;
+use anchor_lang::prelude::*;
 
-// #[account]
-// #[derive(InitSpace)]
-// pub struct Treasury {
-//     pub balance: u64,
-// }
+#[account]
+#[derive(InitSpace)]
+pub struct Treasury {}
 
-// // impl Space for Treasury {
-// //     const INIT_SPACE: usize = 8 + 8
-// // }
+// Space should be 8
