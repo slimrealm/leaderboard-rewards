@@ -1,4 +1,4 @@
-use crate::{error::LeaderboardError, state::Leaderboard, Score, Treasury};
+use crate::{error::LeaderboardError, state::Leaderboard, Score};
 use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
@@ -12,13 +12,11 @@ pub struct Initialize<'info> {
     )]
     pub leaderboard: Account<'info, Leaderboard>,
     #[account(
-        init,
-        payer = admin,
-        space = 8,
-        // seeds = [b"treasury", admin.key().as_ref()],
-        // bump 
+        // init_if_needed,
+        // payer = admin,
+        // space = 8,
     )]
-    pub treasury: Account<'info, Treasury>,
+    pub treasury: Signer<'info>,
     #[account(mut)]
     pub admin: Signer<'info>,
     pub system_program: Program<'info, System>,

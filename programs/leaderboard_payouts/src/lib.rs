@@ -9,7 +9,7 @@ pub mod state;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("G2U9AbzaY4sgsBGggKWCM3zmue5sgQw9BZkLPiLRTCwz");
+declare_id!("4mQJ6rb4TcDoBp948cdnCtGqyMpw9NWYxmJdvizcYWzt");
 
 #[program]
 pub mod leaderboard_payouts {
@@ -45,7 +45,24 @@ pub mod leaderboard_payouts {
         top_participants: Vec<Score>,
     ) -> Result<()> {
         ctx.accounts.distribute_payouts(top_participants)
+
+        // let payout_ctx = Context::new(
+        //     ctx.program_id,
+        //     &mut ctx.accounts.treasury,
+        //     ctx.accounts.admin,
+        //     ctx.accounts.system_program,
+        // );
+        // leaderboard_payouts::send_payout_to_winner(ctx, winner_account)?;
     }
+
+    // pub fn send_payout_to_winner(
+    //     ctx: Context<SendPayoutToWinner>,
+    //     winner_account: Pubkey,
+    //     curr_reward: u64,
+    // ) -> Result<()> {
+    //     ctx.accounts
+    //         .send_payout_to_winner(winner_account, curr_reward)
+    // }
 
     // pub fn update_score() -> Result<()> {
     // }

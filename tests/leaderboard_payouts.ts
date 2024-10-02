@@ -86,6 +86,7 @@ console.log(`Bump: ${leaderboardBump}`);
 describe("leaderboard_payouts", () => {
   beforeEach(async () => {
     await airdrop(10, adminKeypair.publicKey);
+    await airdrop(10, treasuryKeypair.publicKey);
 
     // Check if leaderboard acct exists.  If yes, close.
     try {
@@ -112,162 +113,287 @@ describe("leaderboard_payouts", () => {
       }
     }
 
+    // TODO: STILL NEED for ????
     // Check if treasury acct exists.  If yes, close.
-    try {
-      await program.account.treasury.fetch(treasuryKeypair.publicKey);
-      const closePdaTxSig = await program.methods.closeTreasuryAccount()
-        .accountsPartial({
-          admin: adminKeypair.publicKey,
-          treasury: treasuryKeypair.publicKey,
-          systemProgram: SystemProgram.programId
-        })
-        .signers([adminKeypair])
-        .rpc();
-      const latestBlockHash = await connection.getLatestBlockhash();
-      await connection.confirmTransaction({
-        blockhash: latestBlockHash.blockhash,
-        lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
-        signature: closePdaTxSig,
-      },);
-    } catch (error) {
-      if (error instanceof anchor.AnchorError && error.error.errorCode.code === "AccountNotInitialized") {
-        console.log("Treasury account does not exist");
-      } else {
-        console.error(error);
-      }
-    }
+    // try {
+    //   await program.account.treasury.fetch(treasuryKeypair.publicKey);
+    //   const closePdaTxSig = await program.methods.closeTreasuryAccount()
+    //     .accountsPartial({
+    //       admin: adminKeypair.publicKey,
+    //       treasury: treasuryKeypair.publicKey,
+    //       systemProgram: SystemProgram.programId
+    //     })
+    //     .signers([adminKeypair])
+    //     .rpc();
+    //   const latestBlockHash = await connection.getLatestBlockhash();
+    //   await connection.confirmTransaction({
+    //     blockhash: latestBlockHash.blockhash,
+    //     lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+    //     signature: closePdaTxSig,
+    //   },);
+    // } catch (error) {
+    //   if (error instanceof anchor.AnchorError && error.error.errorCode.code === "AccountNotInitialized") {
+    //     console.log("Treasury account does not exist");
+    //   } else {
+    //     console.error(error);
+    //   }
+    // }
   });
 
-  it("call initialize once", async () => {
-    const periodLength = new anchor.BN(86400); // 1 day in seconds
-    const topSpots = 5;
+  // it("call initialize once", async () => {
+  //   const periodLength = new anchor.BN(86400); // 1 day in seconds
+  //   const topSpots = 5;
+  //   const callInitResult = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots);
+  //   expect(callInitResult).to.be.true;
+  //   const initChecksResult = await postInitChecks(leaderboardPDA, periodLength, topSpots);
+  //   expect(initChecksResult).to.be.true;
+  // })
+
+  // it("call initialize twice", async () => {
+  //   const periodLength = new anchor.BN(86400); // 1 day in seconds
+  //   const topSpots = 5;
+  //   const initResult1 = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots);
+  //   expect(initResult1).to.be.true;
+  //   const initResult2 = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots);
+  //   expect(initResult2).to.be.false;
+
+  //   const initChecksResult = await postInitChecks(leaderboardPDA, periodLength, topSpots);
+  //   expect(initChecksResult).to.be.true;
+  // })
+
+  // it("close acct if exists", async () => {
+  //   const stringSeed = "leaderboard";
+  //   const adminPubkeySeed = adminKeypair.publicKey;
+
+  //   // Initialize - ensure leaderboard acct is created
+  //   const periodLength = new anchor.BN(86400); // 1 day in seconds
+  //   const topSpots = 5;
+  //   const callInitResult = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots);
+  //   expect(callInitResult).to.be.true;
+  //   const initChecksResult = await postInitChecks(leaderboardPDA, periodLength, topSpots);
+  //   expect(initChecksResult).to.be.true;
+
+  //   // Get balance before closing leaderboard account 
+  //   try {
+  //     let balance = await connection.getBalance(leaderboardPDA,);
+  //     console.log(`Account balance: ${balance} lamports`);
+  //     let solBalance = balance / anchor.web3.LAMPORTS_PER_SOL;
+  //     console.log(`SOL balance: ${solBalance} SOL`);
+  //   } catch (error) {
+  //     console.error("Initial getBalance() failed:", error);
+  //   }
+
+  //   // Close leaderboard account
+  //   try {
+  //     const closePdaTxSig = await program.methods.closeLeaderboardAccount()
+  //       .accountsPartial({
+  //         admin: adminKeypair.publicKey,
+  //         leaderboard: leaderboardPDA,
+  //         systemProgram: SystemProgram.programId
+  //       })
+  //       .signers([adminKeypair])
+  //       .rpc();
+  //     let latestBlockHash = await connection.getLatestBlockhash();
+  //     await connection.confirmTransaction({
+  //       blockhash: latestBlockHash.blockhash,
+  //       lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+  //       signature: closePdaTxSig,
+  //     },);
+  //   } catch (error) {
+  //     console.error("Failed to close PDA:", error);
+  //   }
+
+  //   // Balance after closing account should be 0
+  //   try {
+  //     let balance = await connection.getBalance(leaderboardPDA, 'finalized');
+  //     console.log(`Account balance: ${balance} lamports`);
+  //     let solBalance = balance / anchor.web3.LAMPORTS_PER_SOL;
+  //     console.log(`SOL balance: ${solBalance} SOL`);
+  //     expect(balance).to.equal(0);
+  //   } catch (error) {
+  //     console.error("getBalance() failed after closing PDA:", error);
+  //   }
+
+  //   // Attempt to close leaderboard account again - should fail, as account should be closed already
+  //   try {
+  //     await program.methods.closeLeaderboardAccount()
+  //       .accountsPartial({
+  //         admin: adminKeypair.publicKey,
+  //         leaderboard: leaderboardPDA,
+  //         systemProgram: SystemProgram.programId
+  //       })
+  //       .signers([adminKeypair])
+  //       .rpc();
+  //     expect.fail("Expected to fail but did not");
+  //   } catch (error) {
+  //     console.log("Fail error:", error);
+  //     expect(error).to.be.instanceOf(anchor.AnchorError);
+  //     if (error instanceof anchor.AnchorError) {
+  //       expect(error.error.errorCode.number).to.equal(3012);
+  //     }
+  //   }
+  // })
+
+  // it("fund treasury", async () => {
+  //   const periodLength = new anchor.BN(86400); // 1 day in seconds
+  //   const topSpots = 5;
+
+  //   try {
+  //     let balance = await connection.getBalance(treasuryKeypair.publicKey);
+  //     console.log(`Account balance: ${balance} lamports`);
+  //     let solBalance = balance / anchor.web3.LAMPORTS_PER_SOL;
+  //     console.log(`Account balance: ${solBalance} SOL`);
+  //   } catch (error) {
+  //     console.error("Could not close PDA account:", error);
+  //   }
+
+  //   // Call initialize, which will initialize treasury account
+  //   const initResult = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots);
+  //   expect(initResult).to.be.true;
+  //   const initChecksResult = await postInitChecks(leaderboardPDA, periodLength, topSpots);
+  //   expect(initChecksResult).to.be.true;
+
+  //   // Get rent-exempt balance for treasury account -- just 8 bytes (account discriminator)
+  //   const minBalFor8ByteAcct = await connection.getMinimumBalanceForRentExemption(8);
+
+  //   // Get balance before funding - should equal minBalFor8ByteAcct (lamports)
+  //   let balance = await connection.getBalance(treasuryKeypair.publicKey);
+  //   console.log(`Account balance: ${balance} lamports`);
+  //   expect(balance).to.equal(minBalFor8ByteAcct);
+
+  //   const amount = new anchor.BN(5);
+  //   try {
+  //     const tx = await program.methods.fundTreasury(amount)
+  //       .accountsPartial({
+  //         admin: adminKeypair.publicKey,
+  //         treasury: treasuryKeypair.publicKey,
+  //         systemProgram: SystemProgram.programId
+  //       })
+  //       .signers([adminKeypair, treasuryKeypair])
+  //       .rpc();
+  //     let latestBlockHash = await connection.getLatestBlockhash();
+  //     await connection.confirmTransaction({
+  //       blockhash: latestBlockHash.blockhash,
+  //       lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+  //       signature: tx,
+  //     },);
+
+  //     console.log("Transaction signature", tx);
+  //     console.log("Treasury funded successfully!");
+  //   } catch (error) {
+  //     console.error("Error funding treasury:", error);
+  //   }
+
+  //   // Get balance after funding - should be 5000000000 + minBalFor8ByteAcct (lamports)
+  //   balance = await connection.getBalance(treasuryKeypair.publicKey);
+  //   console.log(`Account balance: ${balance} lamports`);
+  //   expect(balance).to.equal(5000000000 + minBalFor8ByteAcct);
+  // })
+
+  // it("update config", async () => {
+  //   // Set initial values and initialize
+  //   const periodLength = new anchor.BN(86400); // 1 day in seconds
+  //   const topSpots = 5;
+  //   const callInitResult = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots);
+  //   expect(callInitResult).to.be.true;
+
+  //   let leaderboardAcct = await program.account.leaderboard.fetch(leaderboardPDA);
+  //   console.log("periodLength:", leaderboardAcct.periodLength.toString());
+  //   console.log("topSpots:", leaderboardAcct.topSpots.toString());
+  //   assert.equal(leaderboardAcct.periodLength.toString(), periodLength.toString(), "leaderboard account's periodLength should match passed in value.");
+  //   assert.equal(leaderboardAcct.topSpots.toString(), topSpots.toString(), "leaderboard account's topSpots should match passed in value.");
+
+  //   // Update values and expect them to be changed.  TODO: There should be default behavior to wait
+  //   // for end of period to update these values.  If someone is running a game, or waiting to dispense
+  //   // payouts for videos with most views, users will not be happy if the period and payout structure
+  //   // changes mid-cycle.
+  //   const newPeriodLength = new anchor.BN(604800); // 1 week in seconds
+  //   const newTopSpots = 10;
+
+  //   const updateConfigTxSig = await program.methods.updateConfig(newPeriodLength, newTopSpots)
+  //     .accountsPartial({
+  //       leaderboard: leaderboardPDA,
+  //       admin: adminKeypair.publicKey,
+  //     })
+  //     .signers([adminKeypair])
+  //     .rpc();
+  //   let latestBlockHash = await connection.getLatestBlockhash();
+  //   await connection.confirmTransaction({
+  //     blockhash: latestBlockHash.blockhash,
+  //     lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+  //     signature: updateConfigTxSig,
+  //   },);
+
+  //   leaderboardAcct = await program.account.leaderboard.fetch(leaderboardPDA,);
+  //   console.log("Transaction signature for calling update_config", updateConfigTxSig);
+  //   console.log("periodLength:", leaderboardAcct.periodLength.toString());
+  //   console.log("topSpots:", leaderboardAcct.topSpots.toString());
+  //   assert.equal(leaderboardAcct.periodLength.toString(), newPeriodLength.toString(), "leaderboard account's periodLength should match new value.");
+  //   assert.equal(leaderboardAcct.topSpots.toString(), newTopSpots.toString(), "leaderboard account's topSpots should match new value.");
+  // })
+
+  it("disribute rewards", async () => {
+    const player1 = anchor.web3.Keypair.generate();
+    const player2 = anchor.web3.Keypair.generate();
+    const player3 = anchor.web3.Keypair.generate();
+    // const player4 = anchor.web3.Keypair.generate();
+    // const player5 = anchor.web3.Keypair.generate();
+
+    const topParticipants = [
+      {
+        player: player1.publicKey,
+        score: new anchor.BN(1927)
+      },
+      {
+        player: player2.publicKey,
+        score: new anchor.BN(1845)
+      },
+      {
+        player: player3.publicKey,
+        score: new anchor.BN(1313)
+      },
+      // {
+      //   player: player4.publicKey,
+      //   score: new anchor.BN(912)
+      // },
+      // {
+      //   player: player5.publicKey,
+      //   score: new anchor.BN(336)
+      // },
+    ]
+
+    const periodLength = new anchor.BN(86400);
+    const topSpots = 3;
     const callInitResult = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots);
     expect(callInitResult).to.be.true;
-    const initChecksResult = await postInitChecks(leaderboardPDA, periodLength, topSpots);
-    expect(initChecksResult).to.be.true;
-  })
 
-  it("call initialize twice", async () => {
-    const periodLength = new anchor.BN(86400); // 1 day in seconds
-    const topSpots = 5;
-    const initResult1 = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots);
-    expect(initResult1).to.be.true;
-    const initResult2 = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots);
-    expect(initResult2).to.be.false;
 
-    const initChecksResult = await postInitChecks(leaderboardPDA, periodLength, topSpots);
-    expect(initChecksResult).to.be.true;
-  })
+    // Get balances for new accounts - should all be 0
+    let balance = await connection.getBalance(player1.publicKey);
+    expect(balance).to.equal(0);
+    balance = await connection.getBalance(player2.publicKey);
+    expect(balance).to.equal(0);
+    balance = await connection.getBalance(player3.publicKey);
+    expect(balance).to.equal(0);
+    // balance = await connection.getBalance(player4.publicKey);
+    // expect(balance).to.equal(0);
+    // balance = await connection.getBalance(player5.publicKey);
+    // expect(balance).to.equal(0);
 
-  it("close acct if exists", async () => {
-    const stringSeed = "leaderboard";
-    const adminPubkeySeed = adminKeypair.publicKey;
+    // TODO: Consistent lamports vs. SOL
+    const fundTreasuryAmountSol = new anchor.BN(1);
+    const fundTreasuryAmountLamports = new anchor.BN(fundTreasuryAmountSol.toNumber() * LAMPORTS_PER_SOL);
 
-    // Initialize - ensure leaderboard acct is created
-    const periodLength = new anchor.BN(86400); // 1 day in seconds
-    const topSpots = 5;
-    const callInitResult = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots);
-    expect(callInitResult).to.be.true;
-    const initChecksResult = await postInitChecks(leaderboardPDA, periodLength, topSpots);
-    expect(initChecksResult).to.be.true;
-
-    // Get balance before closing leaderboard account 
+    // Fund treasury account so there is SOL for it to pay out
     try {
-      let balance = await connection.getBalance(leaderboardPDA,);
-      console.log(`Account balance: ${balance} lamports`);
-      let solBalance = balance / anchor.web3.LAMPORTS_PER_SOL;
-      console.log(`SOL balance: ${solBalance} SOL`);
-    } catch (error) {
-      console.error("Initial getBalance() failed:", error);
-    }
-
-    // Close leaderboard account
-    try {
-      const closePdaTxSig = await program.methods.closeLeaderboardAccount()
-        .accountsPartial({
-          admin: adminKeypair.publicKey,
-          leaderboard: leaderboardPDA,
-          systemProgram: SystemProgram.programId
-        })
-        .signers([adminKeypair])
-        .rpc();
-      let latestBlockHash = await connection.getLatestBlockhash();
-      await connection.confirmTransaction({
-        blockhash: latestBlockHash.blockhash,
-        lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
-        signature: closePdaTxSig,
-      },);
-    } catch (error) {
-      console.error("Failed to close PDA:", error);
-    }
-
-    // Balance after closing account should be 0
-    try {
-      let balance = await connection.getBalance(leaderboardPDA, 'finalized');
-      console.log(`Account balance: ${balance} lamports`);
-      let solBalance = balance / anchor.web3.LAMPORTS_PER_SOL;
-      console.log(`SOL balance: ${solBalance} SOL`);
-      expect(balance).to.equal(0);
-    } catch (error) {
-      console.error("getBalance() failed after closing PDA:", error);
-    }
-
-    // Attempt to close leaderboard account again - should fail, as account should be closed already
-    try {
-      await program.methods.closeLeaderboardAccount()
-        .accountsPartial({
-          admin: adminKeypair.publicKey,
-          leaderboard: leaderboardPDA,
-          systemProgram: SystemProgram.programId
-        })
-        .signers([adminKeypair])
-        .rpc();
-      expect.fail("Expected to fail but did not");
-    } catch (error) {
-      console.log("Fail error:", error);
-      expect(error).to.be.instanceOf(anchor.AnchorError);
-      if (error instanceof anchor.AnchorError) {
-        expect(error.error.errorCode.number).to.equal(3012);
-      }
-    }
-  })
-
-  it("fund treasury", async () => {
-    const periodLength = new anchor.BN(86400); // 1 day in seconds
-    const topSpots = 5;
-
-    try {
-      let balance = await connection.getBalance(treasuryKeypair.publicKey);
-      console.log(`Account balance: ${balance} lamports`);
-      let solBalance = balance / anchor.web3.LAMPORTS_PER_SOL;
-      console.log(`Account balance: ${solBalance} SOL`);
-    } catch (error) {
-      console.error("Could not close PDA account:", error);
-    }
-
-    // Call initialize, which will initialize treasury account
-    const initResult = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots);
-    expect(initResult).to.be.true;
-    const initChecksResult = await postInitChecks(leaderboardPDA, periodLength, topSpots);
-    expect(initChecksResult).to.be.true;
-
-    // Get rent-exempt balance for treasury account -- just 8 bytes (account discriminator)
-    const minBalFor8ByteAcct = await connection.getMinimumBalanceForRentExemption(8);
-
-    // Get balance before funding - should equal minBalFor8ByteAcct (lamports)
-    let balance = await connection.getBalance(treasuryKeypair.publicKey);
-    console.log(`Account balance: ${balance} lamports`);
-    expect(balance).to.equal(minBalFor8ByteAcct);
-
-    const amount = new anchor.BN(5);
-    try {
-      const tx = await program.methods.fundTreasury(amount)
+      console.log("CALLING FUNDTREASURY");
+      const tx = await program.methods.fundTreasury(fundTreasuryAmountSol) // TODO: use amount from config, set on init or updateConfig
         .accountsPartial({
           admin: adminKeypair.publicKey,
           treasury: treasuryKeypair.publicKey,
           systemProgram: SystemProgram.programId
         })
-        .signers([adminKeypair])
+        .signers([adminKeypair, treasuryKeypair])
         .rpc();
       let latestBlockHash = await connection.getLatestBlockhash();
       await connection.confirmTransaction({
@@ -275,58 +401,60 @@ describe("leaderboard_payouts", () => {
         lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
         signature: tx,
       },);
-
-      console.log("Transaction signature", tx);
-      console.log("Treasury funded successfully!");
     } catch (error) {
       console.error("Error funding treasury:", error);
     }
 
-    // Get balance after funding - should be 5000000000 + minBalFor8ByteAcct (lamports)
-    balance = await connection.getBalance(treasuryKeypair.publicKey);
-    console.log(`Account balance: ${balance} lamports`);
-    expect(balance).to.equal(5000000000 + minBalFor8ByteAcct);
-  })
+    // Get balance of treasury before distribution
+    const treasuryBalBefore = await connection.getBalance(treasuryKeypair.publicKey)
 
-  it("update config", async () => {
-    // Set initial values and initialize
-    const periodLength = new anchor.BN(86400); // 1 day in seconds
-    const topSpots = 5;
-    const callInitResult = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots);
-    expect(callInitResult).to.be.true;
+    // TODO: In Config, pass reward total.  This should be changed in updateConfig
+    // Call distributePayouts()
+    try {
+      console.log("CALLING DISTPAYOUTS");
+      // const treasuryAcct = await program.account.treasury.fetch(treasuryKeypair.publicKey);
 
-    let leaderboardAcct = await program.account.leaderboard.fetch(leaderboardPDA);
-    console.log("periodLength:", leaderboardAcct.periodLength.toString());
-    console.log("topSpots:", leaderboardAcct.topSpots.toString());
-    assert.equal(leaderboardAcct.periodLength.toString(), periodLength.toString(), "leaderboard account's periodLength should match passed in value.");
-    assert.equal(leaderboardAcct.topSpots.toString(), topSpots.toString(), "leaderboard account's topSpots should match passed in value.");
+      const distPayoutsTxSig = await program.methods.distributePayouts(topParticipants)
+        .accountsPartial({
+          leaderboard: leaderboardPDA,
+          treasury: treasuryKeypair.publicKey,
+          admin: adminKeypair.publicKey,
+          playerAccount1: player1.publicKey,
+          playerAccount2: player2.publicKey,
+          playerAccount3: player3.publicKey,
+          // playerAccount4: player4.publicKey,
+          // playerAccount5: player5.publicKey,
+          systemProgram: SystemProgram.programId
+        })
+        .signers([adminKeypair, treasuryKeypair])
+        .rpc();
+      let latestBlockHash = await connection.getLatestBlockhash();
+      await connection.confirmTransaction({
+        blockhash: latestBlockHash.blockhash,
+        lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+        signature: distPayoutsTxSig,
+      },);
+      console.log("Transaction signature for distribute payouts", distPayoutsTxSig);
+    } catch (error) {
+      console.error("Error calling distributePayouts:", error);
+    }
 
-    // Update values and expect them to be changed.  TODO: There should be default behavior to wait
-    // for end of period to update these values.  If someone is running a game, or waiting to dispense
-    // payouts for videos with most views, users will not be happy if the period and payout structure
-    // changes mid-cycle.
-    const newPeriodLength = new anchor.BN(604800); // 1 week in seconds
-    const newTopSpots = 10;
+    // Get balances for new accounts - should be updated amounts from distributed winnings
+    balance = await connection.getBalance(player1.publicKey);
+    expect(balance).to.equal(500000000);
+    balance = await connection.getBalance(player2.publicKey);
+    expect(balance).to.equal(250000000);
+    balance = await connection.getBalance(player3.publicKey);
+    expect(balance).to.equal(125000000);
+    // balance = await connection.getBalance(player4.publicKey);
+    // expect(balance).to.equal(62500000);
+    // balance = await connection.getBalance(player5.publicKey);
+    // expect(balance).to.equal(31250000);
 
-    const updateConfigTxSig = await program.methods.updateConfig(newPeriodLength, newTopSpots)
-      .accountsPartial({
-        leaderboard: leaderboardPDA,
-        admin: adminKeypair.publicKey,
-      })
-      .signers([adminKeypair])
-      .rpc();
-    let latestBlockHash = await connection.getLatestBlockhash();
-    await connection.confirmTransaction({
-      blockhash: latestBlockHash.blockhash,
-      lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
-      signature: updateConfigTxSig,
-    },);
-
-    leaderboardAcct = await program.account.leaderboard.fetch(leaderboardPDA,);
-    console.log("Transaction signature for calling update_config", updateConfigTxSig);
-    console.log("periodLength:", leaderboardAcct.periodLength.toString());
-    console.log("topSpots:", leaderboardAcct.topSpots.toString());
-    assert.equal(leaderboardAcct.periodLength.toString(), newPeriodLength.toString(), "leaderboard account's periodLength should match new value.");
-    assert.equal(leaderboardAcct.topSpots.toString(), newTopSpots.toString(), "leaderboard account's topSpots should match new value.");
+    // Get balance of treasury before distribution
+    const treasuryBalAfter = await connection.getBalance(treasuryKeypair.publicKey)
+    console.log('Before:', treasuryBalBefore);
+    console.log('After:', treasuryBalAfter);
+    expect(treasuryBalAfter).to.equal(treasuryBalBefore - (500000000 + 250000000 + 125000000))
   })
 })

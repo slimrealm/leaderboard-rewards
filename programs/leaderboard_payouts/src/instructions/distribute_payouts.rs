@@ -1,4 +1,5 @@
-use crate::{error::LeaderboardError, state::Leaderboard, Score, Treasury};
+// use super::send_payout_to_winner;
+use crate::{error::LeaderboardError, state::Leaderboard, Score};
 use anchor_lang::{
     prelude::*,
     system_program::{transfer, Transfer},
@@ -33,17 +34,12 @@ pub struct DistributePayouts<'info> {
     #[account(mut)]
     /// CHECK: This is safe
     pub player_account_3: Option<AccountInfo<'info>>,
-    #[account(mut)]
-    /// CHECK: This is safe
-    pub player_account_4: Option<AccountInfo<'info>>,
-    #[account(mut)]
-    /// CHECK: This is safe
-    pub player_account_5: Option<AccountInfo<'info>>,
-    // pub player_account_6: Option<AccountInfo<'info>>,
-    // pub player_account_7: Option<AccountInfo<'info>>,
-    // pub player_account_8: Option<AccountInfo<'info>>,
-    // pub player_account_9: Option<AccountInfo<'info>>,
-    // pub player_account_10: Option<AccountInfo<'info>>,
+    // #[account(mut)]
+    // /// CHECK: This is safe
+    // pub player_account_4: Option<AccountInfo<'info>>,
+    // #[account(mut)]
+    // /// CHECK: This is safe
+    // pub player_account_5: Option<AccountInfo<'info>>,
     pub system_program: Program<'info, System>,
 }
 
@@ -62,15 +58,15 @@ impl<'info> DistributePayouts<'info> {
         // top_participants.sort_by(|a, b| b.1.cmp(a.1));
         // top_participants.truncate(self.leaderboard.top_spots as usize);
 
-        let total_reward_per_period = 100000000000; // 100 SOL  //TODO: must use self.leaderboard.total_reward_per_period - set on init or updateConfig;
+        let total_reward_per_period = 1000000000; // 1 SOL  //TODO: must use self.leaderboard.total_reward_per_period - set on init or updateConfig;
         let mut remaining_reward = total_reward_per_period;
 
         let player_accounts = vec![
             self.player_account_1.clone(),
             self.player_account_2.clone().unwrap(),
             self.player_account_3.clone().unwrap(),
-            self.player_account_4.clone().unwrap(),
-            self.player_account_5.clone().unwrap(),
+            // self.player_account_4.clone().unwrap(),
+            // self.player_account_5.clone().unwrap(),
         ];
 
         for (i, participant) in top_participants.iter().enumerate() {
@@ -92,7 +88,7 @@ impl<'info> DistributePayouts<'info> {
                 to: to.unwrap().to_account_info(),
             };
 
-            let admin_key = self.admin.key();
+            // let admin_key = self.admin.key();
 
             // let signer_seeds: &[&[&[u8]]] = &[treasury_seeds];
             msg!("ADMIN PubKey: {}", self.admin.key().to_string());

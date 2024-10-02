@@ -1,4 +1,4 @@
-use crate::Treasury;
+// use crate::Treasury;
 use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
@@ -7,9 +7,9 @@ pub struct CloseTreasuryAccount<'info> {
         mut,
         // seeds = [b"treasury", admin.key().as_ref()],
         // bump,
-        close = admin
+        // close = admin
     )]
-    pub treasury: Account<'info, Treasury>,
+    pub treasury: Signer<'info>,
     #[account(mut)]
     pub admin: Signer<'info>,
     pub system_program: Program<'info, System>,

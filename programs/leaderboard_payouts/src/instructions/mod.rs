@@ -21,3 +21,6 @@ pub use update_config::*;
 
 pub mod distribute_payouts;
 pub use distribute_payouts::*;
+
+pub mod send_payout_to_winner;
+pub use send_payout_to_winner::*;
