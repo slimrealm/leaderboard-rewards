@@ -40,6 +40,13 @@ pub mod leaderboard_payouts {
         ctx.accounts.update_config(new_period_length, new_top_spots)
     }
 
+    pub fn distribute_payouts(
+        ctx: Context<DistributePayouts>,
+        top_participants: Vec<Score>,
+    ) -> Result<()> {
+        ctx.accounts.distribute_payouts(top_participants)
+    }
+
     // pub fn update_score() -> Result<()> {
     // }
 

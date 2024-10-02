@@ -75,18 +75,13 @@ const program = anchor.workspace.LeaderboardPayouts as Program<LeaderboardPayout
 
 // Persistent accounts
 const adminKeypair = Keypair.fromSecretKey(new Uint8Array(adminWallet));
+const treasuryKeypair = Keypair.generate();
 const [leaderboardPDA, leaderboardBump] = PublicKey.findProgramAddressSync(
   [Buffer.from("leaderboard"), adminKeypair.publicKey.toBuffer()],
   program.programId
 );
 console.log(`Leaderboard PDA: ${leaderboardPDA.toString()}`);
 console.log(`Bump: ${leaderboardBump}`);
-const [treasuryPDA, treasuryBump] = PublicKey.findProgramAddressSync(
-  [Buffer.from("treasury"), adminKeypair.publicKey.toBuffer()],
-  program.programId
-);
-console.log(`Treasury PDA: ${treasuryPDA.toString()}`);
-console.log(`Bump: ${treasuryBump}`);
 
 describe("leaderboard_payouts", () => {
   beforeEach(async () => {
@@ -119,11 +114,11 @@ describe("leaderboard_payouts", () => {
 
     // Check if treasury acct exists.  If yes, close.
     try {
-      await program.account.treasury.fetch(treasuryPDA);
+      await program.account.treasury.fetch(treasuryKeypair.publicKey);
       const closePdaTxSig = await program.methods.closeTreasuryAccount()
         .accountsPartial({
           admin: adminKeypair.publicKey,
-          treasury: treasuryPDA,
+          treasury: treasuryKeypair.publicKey,
           systemProgram: SystemProgram.programId
         })
         .signers([adminKeypair])
@@ -165,10 +160,10 @@ describe("leaderboard_payouts", () => {
   })
 
   it("close acct if exists", async () => {
-    const stringSeed = "treasury";
+    const stringSeed = "leaderboard";
     const adminPubkeySeed = adminKeypair.publicKey;
 
-    // Initialize - ensure treasury acct is created
+    // Initialize - ensure leaderboard acct is created
     const periodLength = new anchor.BN(86400); // 1 day in seconds
     const topSpots = 5;
     const callInitResult = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots);
@@ -176,9 +171,9 @@ describe("leaderboard_payouts", () => {
     const initChecksResult = await postInitChecks(leaderboardPDA, periodLength, topSpots);
     expect(initChecksResult).to.be.true;
 
-    // Get balance before closing treasury account 
+    // Get balance before closing leaderboard account 
     try {
-      let balance = await connection.getBalance(treasuryPDA,);
+      let balance = await connection.getBalance(leaderboardPDA,);
       console.log(`Account balance: ${balance} lamports`);
       let solBalance = balance / anchor.web3.LAMPORTS_PER_SOL;
       console.log(`SOL balance: ${solBalance} SOL`);
@@ -186,12 +181,12 @@ describe("leaderboard_payouts", () => {
       console.error("Initial getBalance() failed:", error);
     }
 
-    // Close treasury account
+    // Close leaderboard account
     try {
-      const closePdaTxSig = await program.methods.closeTreasuryAccount()
+      const closePdaTxSig = await program.methods.closeLeaderboardAccount()
         .accountsPartial({
           admin: adminKeypair.publicKey,
-          treasury: treasuryPDA,
+          leaderboard: leaderboardPDA,
           systemProgram: SystemProgram.programId
         })
         .signers([adminKeypair])
@@ -208,7 +203,7 @@ describe("leaderboard_payouts", () => {
 
     // Balance after closing account should be 0
     try {
-      let balance = await connection.getBalance(treasuryPDA, 'finalized');
+      let balance = await connection.getBalance(leaderboardPDA, 'finalized');
       console.log(`Account balance: ${balance} lamports`);
       let solBalance = balance / anchor.web3.LAMPORTS_PER_SOL;
       console.log(`SOL balance: ${solBalance} SOL`);
@@ -217,12 +212,12 @@ describe("leaderboard_payouts", () => {
       console.error("getBalance() failed after closing PDA:", error);
     }
 
-    // Attempt to close treasury account again - should fail, as account should be closed already
+    // Attempt to close leaderboard account again - should fail, as account should be closed already
     try {
-      await program.methods.closeTreasuryAccount()
+      await program.methods.closeLeaderboardAccount()
         .accountsPartial({
           admin: adminKeypair.publicKey,
-          treasury: treasuryPDA,
+          leaderboard: leaderboardPDA,
           systemProgram: SystemProgram.programId
         })
         .signers([adminKeypair])
@@ -242,7 +237,7 @@ describe("leaderboard_payouts", () => {
     const topSpots = 5;
 
     try {
-      let balance = await connection.getBalance(treasuryPDA,);
+      let balance = await connection.getBalance(treasuryKeypair.publicKey);
       console.log(`Account balance: ${balance} lamports`);
       let solBalance = balance / anchor.web3.LAMPORTS_PER_SOL;
       console.log(`Account balance: ${solBalance} SOL`);
@@ -260,8 +255,7 @@ describe("leaderboard_payouts", () => {
     const minBalFor8ByteAcct = await connection.getMinimumBalanceForRentExemption(8);
 
     // Get balance before funding - should equal minBalFor8ByteAcct (lamports)
-    console.log("treasury PDA:", treasuryPDA.toString());
-    let balance = await connection.getBalance(treasuryPDA,);
+    let balance = await connection.getBalance(treasuryKeypair.publicKey);
     console.log(`Account balance: ${balance} lamports`);
     expect(balance).to.equal(minBalFor8ByteAcct);
 
@@ -270,7 +264,7 @@ describe("leaderboard_payouts", () => {
       const tx = await program.methods.fundTreasury(amount)
         .accountsPartial({
           admin: adminKeypair.publicKey,
-          treasury: treasuryPDA,
+          treasury: treasuryKeypair.publicKey,
           systemProgram: SystemProgram.programId
         })
         .signers([adminKeypair])
@@ -289,8 +283,7 @@ describe("leaderboard_payouts", () => {
     }
 
     // Get balance after funding - should be 5000000000 + minBalFor8ByteAcct (lamports)
-    console.log("treasury PDA:", treasuryPDA.toString());
-    balance = await connection.getBalance(treasuryPDA,);
+    balance = await connection.getBalance(treasuryKeypair.publicKey);
     console.log(`Account balance: ${balance} lamports`);
     expect(balance).to.equal(5000000000 + minBalFor8ByteAcct);
   })

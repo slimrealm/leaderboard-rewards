@@ -5,8 +5,8 @@ use anchor_lang::prelude::*;
 pub struct CloseTreasuryAccount<'info> {
     #[account(
         mut,
-        seeds = [b"treasury", admin.key().as_ref()],
-        bump,
+        // seeds = [b"treasury", admin.key().as_ref()],
+        // bump,
         close = admin
     )]
     pub treasury: Account<'info, Treasury>,

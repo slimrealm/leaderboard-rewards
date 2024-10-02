@@ -12,4 +12,6 @@ pub enum LeaderboardError {
     PeriodNotEnded,
     #[msg("Account is already initialized")]
     AccountAlreadyInitialized,
+    #[msg("Top participant account not found")]
+    TopParticipantAccountNotFound,
 }

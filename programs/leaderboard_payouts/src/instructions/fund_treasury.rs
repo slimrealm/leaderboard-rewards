@@ -1,5 +1,7 @@
 use anchor_lang::{
-    prelude::*, solana_program::native_token::LAMPORTS_PER_SOL, system_program::{transfer, Transfer}
+    prelude::*,
+    solana_program::native_token::LAMPORTS_PER_SOL,
+    system_program::{transfer, Transfer},
 };
 
 use crate::Treasury;
@@ -8,8 +10,8 @@ use crate::Treasury;
 pub struct FundTreasury<'info> {
     #[account(
         mut,
-        seeds = [b"treasury", admin.key().as_ref()],
-        bump 
+        // seeds = [b"treasury", admin.key().as_ref()],
+        // bump 
     )]
     pub treasury: Account<'info, Treasury>,
     #[account(mut)]

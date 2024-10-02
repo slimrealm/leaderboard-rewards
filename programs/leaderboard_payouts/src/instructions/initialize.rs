@@ -15,8 +15,8 @@ pub struct Initialize<'info> {
         init,
         payer = admin,
         space = 8,
-        seeds = [b"treasury", admin.key().as_ref()],
-        bump 
+        // seeds = [b"treasury", admin.key().as_ref()],
+        // bump 
     )]
     pub treasury: Account<'info, Treasury>,
     #[account(mut)]

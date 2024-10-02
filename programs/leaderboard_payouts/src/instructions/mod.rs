@@ -19,5 +19,5 @@ pub use update_config::*;
 // pub mod update_scores;
 // pub use update_scores::*;
 
-// pub mod distribute_payouts;
-// pub use distribute_payouts::*;
+pub mod distribute_payouts;
+pub use distribute_payouts::*;
