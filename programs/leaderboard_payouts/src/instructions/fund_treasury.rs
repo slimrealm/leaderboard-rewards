@@ -4,15 +4,9 @@ use anchor_lang::{
     system_program::{transfer, Transfer},
 };
 
-// use crate::Treasury;
-
 #[derive(Accounts)]
 pub struct FundTreasury<'info> {
-    #[account(
-        mut,
-        // seeds = [b"treasury", admin.key().as_ref()],
-        // bump 
-    )]
+    #[account(mut)]
     pub treasury: Signer<'info>,
     #[account(mut)]
     pub admin: Signer<'info>,

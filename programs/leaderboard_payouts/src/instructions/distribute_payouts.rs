@@ -1,4 +1,3 @@
-// use super::send_payout_to_winner;
 use crate::{error::LeaderboardError, state::Leaderboard, Score};
 use anchor_lang::{
     prelude::*,
@@ -13,33 +12,19 @@ pub struct DistributePayouts<'info> {
         bump
     )]
     pub leaderboard: Account<'info, Leaderboard>,
-    #[account(
-        mut,
-        // seeds = [b"treasury", admin.key().as_ref()],
-        // bump
-    )]
+    #[account(mut)]
     pub treasury: Signer<'info>,
     #[account(mut)]
     pub admin: Signer<'info>,
-    // #[account(mut)]
-    // pub authority: Signer<'info>,
-
-    // Specify accounts explicitly
     #[account(mut)]
     /// CHECK: This is safe
-    pub player_account_1: AccountInfo<'info>, // Example account type
+    pub player_account_1: AccountInfo<'info>,
     #[account(mut)]
     /// CHECK: This is safe
-    pub player_account_2: Option<AccountInfo<'info>>, // Optional accounts for fewer than max
+    pub player_account_2: Option<AccountInfo<'info>>,
     #[account(mut)]
     /// CHECK: This is safe
     pub player_account_3: Option<AccountInfo<'info>>,
-    // #[account(mut)]
-    // /// CHECK: This is safe
-    // pub player_account_4: Option<AccountInfo<'info>>,
-    // #[account(mut)]
-    // /// CHECK: This is safe
-    // pub player_account_5: Option<AccountInfo<'info>>,
     pub system_program: Program<'info, System>,
 }
 
@@ -52,12 +37,6 @@ impl<'info> DistributePayouts<'info> {
                                       // program_id: &Pubkey,
     ) -> Result<()> {
         // Get top <top_spots> pubkeys and scores, sorted 1 through <top_spots>
-        // Iterate through, distributing correct remaining amount to each winner account
-
-        // let mut top_participants: Vec<_> = self.leaderboard.scores.iter().collect();
-        // top_participants.sort_by(|a, b| b.1.cmp(a.1));
-        // top_participants.truncate(self.leaderboard.top_spots as usize);
-
         let total_reward_per_period = 1000000000; // 1 SOL  //TODO: must use self.leaderboard.total_reward_per_period - set on init or updateConfig;
         let mut remaining_reward = total_reward_per_period;
 
@@ -65,10 +44,9 @@ impl<'info> DistributePayouts<'info> {
             self.player_account_1.clone(),
             self.player_account_2.clone().unwrap(),
             self.player_account_3.clone().unwrap(),
-            // self.player_account_4.clone().unwrap(),
-            // self.player_account_5.clone().unwrap(),
         ];
 
+        // Iterate through, distributing correct remaining amount to each winner account
         for (i, participant) in top_participants.iter().enumerate() {
             msg!("Remaining Reward: {}", remaining_reward);
             let curr_reward = total_reward_per_period / (2u64.pow(i as u32 + 1));
@@ -88,25 +66,15 @@ impl<'info> DistributePayouts<'info> {
                 to: to.unwrap().to_account_info(),
             };
 
-            // let admin_key = self.admin.key();
-
-            // let signer_seeds: &[&[&[u8]]] = &[treasury_seeds];
             msg!("ADMIN PubKey: {}", self.admin.key().to_string());
             msg!("TREASURY PubKey: {}", self.treasury.key().to_string());
 
-            // let ctx = CpiContext::new(self.system_program.to_account_info(), transfer_accounts);
-            let ctx = CpiContext::new/*_with_signer*/(
-                self.system_program.to_account_info(),
-                transfer_accounts,
-                // signer_seeds,
-            );
+            let ctx = CpiContext::new(self.system_program.to_account_info(), transfer_accounts);
 
             transfer(ctx, curr_reward)?;
 
             remaining_reward -= curr_reward;
         }
-
-        // self.treasury.balance = remaining_reward; //TODO:
 
         // // Store historical data
         // leaderboard.historical_data.push(HistoricalPeriod {

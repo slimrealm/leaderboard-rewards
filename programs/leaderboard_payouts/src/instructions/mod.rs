@@ -7,9 +7,6 @@ pub use fund_treasury::*;
 pub mod initialize;
 pub use initialize::*;
 
-pub mod close_treasury_account;
-pub use close_treasury_account::*;
-
 pub mod close_leaderboard_account;
 pub use close_leaderboard_account::*;
 
@@ -21,6 +18,3 @@ pub use update_config::*;
 
 pub mod distribute_payouts;
 pub use distribute_payouts::*;
-
-pub mod send_payout_to_winner;
-pub use send_payout_to_winner::*;

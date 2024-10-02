@@ -1,11 +1,9 @@
 use anchor_lang::prelude::*;
 
-// pub mod constants;
 pub mod error;
 pub mod instructions;
 pub mod state;
 
-// pub use constants::*;
 pub use instructions::*;
 pub use state::*;
 
@@ -28,10 +26,6 @@ pub mod leaderboard_payouts {
         Ok(())
     }
 
-    pub fn close_treasury_account(_ctx: Context<CloseTreasuryAccount>) -> Result<()> {
-        Ok(())
-    }
-
     pub fn update_config(
         ctx: Context<UpdateConfig>,
         new_period_length: i64,
@@ -45,28 +39,5 @@ pub mod leaderboard_payouts {
         top_participants: Vec<Score>,
     ) -> Result<()> {
         ctx.accounts.distribute_payouts(top_participants)
-
-        // let payout_ctx = Context::new(
-        //     ctx.program_id,
-        //     &mut ctx.accounts.treasury,
-        //     ctx.accounts.admin,
-        //     ctx.accounts.system_program,
-        // );
-        // leaderboard_payouts::send_payout_to_winner(ctx, winner_account)?;
     }
-
-    // pub fn send_payout_to_winner(
-    //     ctx: Context<SendPayoutToWinner>,
-    //     winner_account: Pubkey,
-    //     curr_reward: u64,
-    // ) -> Result<()> {
-    //     ctx.accounts
-    //         .send_payout_to_winner(winner_account, curr_reward)
-    // }
-
-    // pub fn update_score() -> Result<()> {
-    // }
-
-    // pub fn end_period(ctx: Context<EndPeriod>) -> Result<()> {
-    // }
 }

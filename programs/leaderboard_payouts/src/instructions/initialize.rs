@@ -11,11 +11,7 @@ pub struct Initialize<'info> {
         bump 
     )]
     pub leaderboard: Account<'info, Leaderboard>,
-    #[account(
-        // init_if_needed,
-        // payer = admin,
-        // space = 8,
-    )]
+    #[account(mut)]
     pub treasury: Signer<'info>,
     #[account(mut)]
     pub admin: Signer<'info>,
