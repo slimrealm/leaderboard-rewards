@@ -11,19 +11,19 @@ use anchor_lang::prelude::*;
 // }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
-pub struct Score {
-    pub player: Pubkey,
+pub struct Participant {
+    pub pubkey: Pubkey,
     pub score: u64,
 }
 
-impl Space for Score {
+impl Space for Participant {
     const INIT_SPACE: usize = 32 + 8;
 }
 
-impl Default for Score {
+impl Default for Participant {
     fn default() -> Self {
-        Score {
-            player: Pubkey::default(),
+        Participant {
+            pubkey: Pubkey::default(),
             score: 0,
         }
     }
@@ -36,7 +36,7 @@ pub struct Leaderboard {
     pub top_spots: u8,
     pub current_period_start: i64,
     #[max_len(100)]
-    pub scores: Vec<Score>,
+    pub participants: Vec<Participant>,
     pub is_initialized: bool,
     // #[max_len(10)]
     // pub historical_data: Vec<HistoricalPeriod>,

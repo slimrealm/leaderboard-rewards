@@ -4,17 +4,31 @@ import { SystemProgram, Connection, Keypair, PublicKey, Commitment, LAMPORTS_PER
 import { LeaderboardPayouts } from "../target/types/leaderboard_payouts";
 import { assert, expect } from "chai";
 import adminWallet from "./admin-wallet.json"
+import { Participant, ParticipantWithNumberScore } from "./types";
+import { updateScoresTests } from "./update_scores";
+
+
+export const convertParticipantScores = (participants: Participant[]): ParticipantWithNumberScore[] => {
+  return participants.map(participant => ({
+    pubkey: participant.pubkey,
+    score: participant.score.toNumber()
+  }));
+}
+
+export const confirmTx = async (txSig: string) => {
+  let latestBlockHash = await connection.getLatestBlockhash();
+  await connection.confirmTransaction({
+    blockhash: latestBlockHash.blockhash,
+    lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+    signature: txSig,
+  });
+}
 
 const airdrop = async (amt: number, accountPubKey: anchor.web3.PublicKey) => {
   try {
     const airdropSig = await anchor.getProvider().connection.requestAirdrop(accountPubKey, amt * LAMPORTS_PER_SOL);
     console.log("airdrop tx sig:", airdropSig);
-    let latestBlockHash = await connection.getLatestBlockhash();
-    await connection.confirmTransaction({
-      blockhash: latestBlockHash.blockhash,
-      lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
-      signature: airdropSig,
-    },);
+    await confirmTx(airdropSig);
   } catch (error) {
     console.error(error);
   }
@@ -31,12 +45,7 @@ const callInitialize = async (admin: anchor.web3.Keypair, leaderboardPDA: anchor
       })
       .signers([admin])
       .rpc();
-    let latestBlockHash = await connection.getLatestBlockhash();
-    await connection.confirmTransaction({
-      blockhash: latestBlockHash.blockhash,
-      lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
-      signature: initializeTxSig,
-    },);
+    await confirmTx(initializeTxSig);
     console.log("Transaction signature for calling initialize", initializeTxSig);
     console.log("Leaderboard initialized successfully!");
     return true;
@@ -100,11 +109,7 @@ describe("leaderboard_payouts", () => {
         .signers([adminKeypair])
         .rpc();
       const latestBlockHash = await connection.getLatestBlockhash();
-      await connection.confirmTransaction({
-        blockhash: latestBlockHash.blockhash,
-        lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
-        signature: closePdaTxSig,
-      },);
+      await confirmTx(closePdaTxSig);
     } catch (error) {
       if (error instanceof anchor.AnchorError && error.error.errorCode.code === "AccountNotInitialized") {
         console.log("Leaderboard acount does not exist");
@@ -167,12 +172,7 @@ describe("leaderboard_payouts", () => {
         })
         .signers([adminKeypair])
         .rpc();
-      let latestBlockHash = await connection.getLatestBlockhash();
-      await connection.confirmTransaction({
-        blockhash: latestBlockHash.blockhash,
-        lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
-        signature: closePdaTxSig,
-      },);
+      await confirmTx(closePdaTxSig);
     } catch (error) {
       console.error("Failed to close PDA:", error);
     }
@@ -245,12 +245,7 @@ describe("leaderboard_payouts", () => {
         })
         .signers([adminKeypair, treasuryKeypair])
         .rpc();
-      let latestBlockHash = await connection.getLatestBlockhash();
-      await connection.confirmTransaction({
-        blockhash: latestBlockHash.blockhash,
-        lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
-        signature: tx,
-      },);
+      await confirmTx(tx);
 
       console.log("Transaction signature", tx);
       console.log("Treasury funded successfully!");
@@ -291,12 +286,7 @@ describe("leaderboard_payouts", () => {
       })
       .signers([adminKeypair])
       .rpc();
-    let latestBlockHash = await connection.getLatestBlockhash();
-    await connection.confirmTransaction({
-      blockhash: latestBlockHash.blockhash,
-      lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
-      signature: updateConfigTxSig,
-    },);
+    await confirmTx(updateConfigTxSig);
 
     leaderboardAcct = await program.account.leaderboard.fetch(leaderboardPDA,);
     console.log("Transaction signature for calling update_config", updateConfigTxSig);
@@ -306,109 +296,110 @@ describe("leaderboard_payouts", () => {
     assert.equal(leaderboardAcct.topSpots.toString(), newTopSpots.toString(), "leaderboard account's topSpots should match new value.");
   })
 
-  it("disribute rewards", async () => {
-    const player1 = anchor.web3.Keypair.generate();
-    const player2 = anchor.web3.Keypair.generate();
-    const player3 = anchor.web3.Keypair.generate();
-
-    const topParticipants = [
-      {
-        player: player1.publicKey,
-        score: new anchor.BN(1927)
-      },
-      {
-        player: player2.publicKey,
-        score: new anchor.BN(1845)
-      },
-      {
-        player: player3.publicKey,
-        score: new anchor.BN(1313)
-      },
-    ]
-
+  it("update scores", async () => {
+    // Set initial values and initialize
     const periodLength = new anchor.BN(86400);
-    const topSpots = 3;
+    const topSpots = 5;
     const callInitResult = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots);
     expect(callInitResult).to.be.true;
 
-
-    // Get balances for new accounts - should all be 0
-    let balance = await connection.getBalance(player1.publicKey);
-    expect(balance).to.equal(0);
-    balance = await connection.getBalance(player2.publicKey);
-    expect(balance).to.equal(0);
-    balance = await connection.getBalance(player3.publicKey);
-    expect(balance).to.equal(0);
-
-    // TODO: Consistent lamports vs. SOL
-    const fundTreasuryAmountSol = new anchor.BN(1);
-    const fundTreasuryAmountLamports = new anchor.BN(fundTreasuryAmountSol.toNumber() * LAMPORTS_PER_SOL);
-
-    // Fund treasury account so there is SOL for it to pay out
-    try {
-      console.log("CALLING FUNDTREASURY");
-      const tx = await program.methods.fundTreasury(fundTreasuryAmountSol) // TODO: use amount from config, set on init or updateConfig
-        .accountsPartial({
-          admin: adminKeypair.publicKey,
-          treasury: treasuryKeypair.publicKey,
-          systemProgram: SystemProgram.programId
-        })
-        .signers([adminKeypair, treasuryKeypair])
-        .rpc();
-      let latestBlockHash = await connection.getLatestBlockhash();
-      await connection.confirmTransaction({
-        blockhash: latestBlockHash.blockhash,
-        lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
-        signature: tx,
-      },);
-    } catch (error) {
-      console.error("Error funding treasury:", error);
-    }
-
-    // Get balance of treasury before distribution
-    const treasuryBalBefore = await connection.getBalance(treasuryKeypair.publicKey)
-
-    // TODO: In Config, pass reward total.  This should be changed in updateConfig
-    // Call distributePayouts()
-    try {
-      console.log("CALLING DISTPAYOUTS");
-      // const treasuryAcct = await program.account.treasury.fetch(treasuryKeypair.publicKey);
-
-      const distPayoutsTxSig = await program.methods.distributePayouts(topParticipants)
-        .accountsPartial({
-          leaderboard: leaderboardPDA,
-          treasury: treasuryKeypair.publicKey,
-          admin: adminKeypair.publicKey,
-          playerAccount1: player1.publicKey,
-          playerAccount2: player2.publicKey,
-          playerAccount3: player3.publicKey,
-          systemProgram: SystemProgram.programId
-        })
-        .signers([adminKeypair, treasuryKeypair])
-        .rpc();
-      let latestBlockHash = await connection.getLatestBlockhash();
-      await connection.confirmTransaction({
-        blockhash: latestBlockHash.blockhash,
-        lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
-        signature: distPayoutsTxSig,
-      },);
-      console.log("Transaction signature for distribute payouts", distPayoutsTxSig);
-    } catch (error) {
-      console.error("Error calling distributePayouts:", error);
-    }
-
-    // Get balances for new accounts - should be updated amounts from distributed winnings
-    balance = await connection.getBalance(player1.publicKey);
-    expect(balance).to.equal(500000000);
-    balance = await connection.getBalance(player2.publicKey);
-    expect(balance).to.equal(250000000);
-    balance = await connection.getBalance(player3.publicKey);
-    expect(balance).to.equal(125000000);
-
-    // Get balance of treasury before distribution
-    const treasuryBalAfter = await connection.getBalance(treasuryKeypair.publicKey)
-    console.log('Before:', treasuryBalBefore);
-    console.log('After:', treasuryBalAfter);
-    expect(treasuryBalAfter).to.equal(treasuryBalBefore - (500000000 + 250000000 + 125000000))
+    await updateScoresTests(leaderboardPDA, adminKeypair);
   })
+
+
+  // it("disribute rewards", async () => {
+  //   const player1 = anchor.web3.Keypair.generate();
+  //   const player2 = anchor.web3.Keypair.generate();
+  //   const player3 = anchor.web3.Keypair.generate();
+
+  //   const topParticipants = [
+  //     {
+  //       pubkey: player1.publicKey,
+  //       score: new anchor.BN(1927)
+  //     },
+  //     {
+  //       pubkey: player2.publicKey,
+  //       score: new anchor.BN(1845)
+  //     },
+  //     {
+  //       pubkey: player3.publicKey,
+  //       score: new anchor.BN(1313)
+  //     },
+  //   ]
+
+  //   const periodLength = new anchor.BN(86400);
+  //   const topSpots = 3;
+  //   const callInitResult = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots);
+  //   expect(callInitResult).to.be.true;
+
+
+  //   // Get balances for new accounts - should all be 0
+  //   let balance = await connection.getBalance(player1.publicKey);
+  //   expect(balance).to.equal(0);
+  //   balance = await connection.getBalance(player2.publicKey);
+  //   expect(balance).to.equal(0);
+  //   balance = await connection.getBalance(player3.publicKey);
+  //   expect(balance).to.equal(0);
+
+  //   // TODO: Consistent lamports vs. SOL
+  //   const fundTreasuryAmountSol = new anchor.BN(1);
+  //   const fundTreasuryAmountLamports = new anchor.BN(fundTreasuryAmountSol.toNumber() * LAMPORTS_PER_SOL);
+
+  //   // Fund treasury account so there is SOL for it to pay out
+  //   try {
+  //     console.log("CALLING FUNDTREASURY");
+  //     const tx = await program.methods.fundTreasury(fundTreasuryAmountSol) // TODO: use amount from config, set on init or updateConfig
+  //       .accountsPartial({
+  //         admin: adminKeypair.publicKey,
+  //         treasury: treasuryKeypair.publicKey,
+  //         systemProgram: SystemProgram.programId
+  //       })
+  //       .signers([adminKeypair, treasuryKeypair])
+  //       .rpc();
+  //     await confirmTx(tx);
+  //   } catch (error) {
+  //     console.error("Error funding treasury:", error);
+  //   }
+
+  //   // Get balance of treasury before distribution
+  //   const treasuryBalBefore = await connection.getBalance(treasuryKeypair.publicKey)
+
+  //   // TODO: In Config, pass reward total.  This should be changed in updateConfig
+  //   // Call distributePayouts()
+  //   try {
+  //     console.log("CALLING DISTPAYOUTS");
+  //     // const treasuryAcct = await program.account.treasury.fetch(treasuryKeypair.publicKey);
+
+  //     const distPayoutsTxSig = await program.methods.distributePayouts(topParticipants)
+  //       .accountsPartial({
+  //         leaderboard: leaderboardPDA,
+  //         treasury: treasuryKeypair.publicKey,
+  //         admin: adminKeypair.publicKey,
+  //         playerAccount1: player1.publicKey,
+  //         playerAccount2: player2.publicKey,
+  //         playerAccount3: player3.publicKey,
+  //         systemProgram: SystemProgram.programId
+  //       })
+  //       .signers([adminKeypair, treasuryKeypair])
+  //       .rpc();
+  //     await confirmTx(distPayoutsTxSig);
+  //     console.log("Transaction signature for distribute payouts", distPayoutsTxSig);
+  //   } catch (error) {
+  //     console.error("Error calling distributePayouts:", error);
+  //   }
+
+  //   // Get balances for new accounts - should be updated amounts from distributed winnings
+  //   balance = await connection.getBalance(player1.publicKey);
+  //   expect(balance).to.equal(500000000);
+  //   balance = await connection.getBalance(player2.publicKey);
+  //   expect(balance).to.equal(250000000);
+  //   balance = await connection.getBalance(player3.publicKey);
+  //   expect(balance).to.equal(125000000);
+
+  //   // Get balance of treasury before distribution
+  //   const treasuryBalAfter = await connection.getBalance(treasuryKeypair.publicKey)
+  //   console.log('Before:', treasuryBalBefore);
+  //   console.log('After:', treasuryBalAfter);
+  //   expect(treasuryBalAfter).to.equal(treasuryBalBefore - (500000000 + 250000000 + 125000000))
+  // })
 })

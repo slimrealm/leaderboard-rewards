@@ -14,4 +14,6 @@ pub enum LeaderboardError {
     AccountAlreadyInitialized,
     #[msg("Top participant account not found")]
     TopParticipantAccountNotFound,
+    #[msg("Too many participants passed in")]
+    TooManyParticipantsPassedIn,
 }

@@ -1,4 +1,4 @@
-use crate::{error::LeaderboardError, state::Leaderboard, Score};
+use crate::{error::LeaderboardError, state::Leaderboard, Participant};
 use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
@@ -27,13 +27,13 @@ impl<'info> Initialize<'info> {
             top_spots > 0 && top_spots <= 10,
             LeaderboardError::InvalidTopSpots
         );
-        let initialized_scores = vec![Score::default(); 100];
+        let initialized_participants = vec![Participant::default(); 100];
         self.leaderboard.set_inner(Leaderboard {
             admin: self.admin.key(),
             period_length,
             top_spots,
             current_period_start: Clock::get()?.unix_timestamp,
-            scores: initialized_scores,
+            participants: initialized_participants,
             is_initialized: true
         });
         Ok(())

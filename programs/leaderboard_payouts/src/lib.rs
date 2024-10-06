@@ -34,10 +34,17 @@ pub mod leaderboard_payouts {
         ctx.accounts.update_config(new_period_length, new_top_spots)
     }
 
-    pub fn distribute_payouts(
-        ctx: Context<DistributePayouts>,
-        top_participants: Vec<Score>,
+    pub fn update_scores(
+        ctx: Context<UpdateScores>,
+        updated_participants: Vec<Participant>,
     ) -> Result<()> {
-        ctx.accounts.distribute_payouts(top_participants)
+        ctx.accounts.update_scores(updated_participants)
+    }
+
+    pub fn end_period_and_distribute_payouts(
+        ctx: Context<EndPeriodAndDistributePayouts>,
+        // top_participants: Vec<Score>,
+    ) -> Result<()> {
+        ctx.accounts.end_period_and_distribute_payouts()
     }
 }
