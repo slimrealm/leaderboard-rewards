@@ -19,7 +19,7 @@ pub struct Initialize<'info> {
 }
 
 impl<'info> Initialize<'info> {
-    pub fn initialize(&mut self, period_length: i64, top_spots: u8) -> Result<()> {
+    pub fn initialize(&mut self, period_length: i64, top_spots: u8, total_payout_per_period: i64) -> Result<()> {
         // If leaderboard is already initialized, we don't want to give leaderboard account the initial data values again
         require!(!self.leaderboard.is_initialized, LeaderboardError::AccountAlreadyInitialized);
         require!(period_length > 0, LeaderboardError::InvalidPeriodLength);
@@ -28,13 +28,17 @@ impl<'info> Initialize<'info> {
             LeaderboardError::InvalidTopSpots
         );
         let initialized_participants = vec![Participant::default(); 100];
+        let current_period_start = Clock::get()?.unix_timestamp;
+        let current_period_end = current_period_start + period_length;
         self.leaderboard.set_inner(Leaderboard {
             admin: self.admin.key(),
             period_length,
             top_spots,
-            current_period_start: Clock::get()?.unix_timestamp,
+            current_period_start,
+            current_period_end,
             participants: initialized_participants,
-            is_initialized: true
+            is_initialized: true,
+            total_payout_per_period
         });
         Ok(())
     }

@@ -34,10 +34,10 @@ const airdrop = async (amt: number, accountPubKey: anchor.web3.PublicKey) => {
   }
 }
 
-const callInitialize = async (admin: anchor.web3.Keypair, leaderboardPDA: anchor.web3.PublicKey, periodLength: anchor.BN, topSpots: number) => {
+const callInitialize = async (admin: anchor.web3.Keypair, leaderboardPDA: anchor.web3.PublicKey, periodLength: anchor.BN, topSpots: number, totalPayoutPerPeriod: anchor.BN) => {
   // Test Initialize function, verify that leaderboard account has correct state after being created
   try {
-    const initializeTxSig = await program.methods.initialize(periodLength, topSpots)
+    const initializeTxSig = await program.methods.initialize(periodLength, topSpots, totalPayoutPerPeriod)
       .accountsPartial({
         leaderboard: leaderboardPDA,
         admin: admin.publicKey,
@@ -55,13 +55,14 @@ const callInitialize = async (admin: anchor.web3.Keypair, leaderboardPDA: anchor
   }
 }
 
-const postInitChecks = async (leaderboardPDA: PublicKey, periodLength: anchor.BN, topSpots: number) => {
+const postInitChecks = async (leaderboardPDA: PublicKey, periodLength: anchor.BN, topSpots: number, totalPayoutPerPeriod: anchor.BN) => {
   // Test that leaderboard account state has the correct values
   try {
     const leaderboardAcct = await program.account.leaderboard.fetch(leaderboardPDA);
     assert.equal(leaderboardAcct.admin.toString(), adminKeypair.publicKey.toString(), "leaderboard account's admin pubkey should match passed in value.");
     assert.equal(leaderboardAcct.periodLength.toString(), periodLength.toString(), "leaderboard account's periodLength should match passed in value.");
     assert.equal(leaderboardAcct.topSpots.toString(), topSpots.toString(), "leaderboard account's topSpots should match passed in value.");
+    assert.equal(leaderboardAcct.totalPayoutPerPeriod.toString(), totalPayoutPerPeriod.toString(), "leaderboard account's topSpots should match passed in value.");
 
     // For currentPeriodStart value, sanity check test that Unix timestamp is > a past date and <= now
     const startTimestampString = leaderboardAcct.currentPeriodStart.toString();
@@ -122,21 +123,23 @@ describe("leaderboard_payouts", () => {
   it("call initialize once", async () => {
     const periodLength = new anchor.BN(86400); // 1 day in seconds
     const topSpots = 5;
-    const callInitResult = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots);
+    const totalPayoutPerPeriod = new anchor.BN(1000000000);
+    const callInitResult = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots, totalPayoutPerPeriod);
     expect(callInitResult).to.be.true;
-    const initChecksResult = await postInitChecks(leaderboardPDA, periodLength, topSpots);
+    const initChecksResult = await postInitChecks(leaderboardPDA, periodLength, topSpots, totalPayoutPerPeriod);
     expect(initChecksResult).to.be.true;
   })
 
   it("call initialize twice", async () => {
     const periodLength = new anchor.BN(86400);
     const topSpots = 5;
-    const initResult1 = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots);
+    const totalPayoutPerPeriod = new anchor.BN(1000000000);
+    const initResult1 = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots, totalPayoutPerPeriod);
     expect(initResult1).to.be.true;
-    const initResult2 = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots);
+    const initResult2 = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots, totalPayoutPerPeriod);
     expect(initResult2).to.be.false;
 
-    const initChecksResult = await postInitChecks(leaderboardPDA, periodLength, topSpots);
+    const initChecksResult = await postInitChecks(leaderboardPDA, periodLength, topSpots, totalPayoutPerPeriod);
     expect(initChecksResult).to.be.true;
   })
 
@@ -147,9 +150,10 @@ describe("leaderboard_payouts", () => {
     // Initialize - ensure leaderboard acct is created
     const periodLength = new anchor.BN(86400);
     const topSpots = 5;
-    const callInitResult = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots);
+    const totalPayoutPerPeriod = new anchor.BN(1000000000);
+    const callInitResult = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots, totalPayoutPerPeriod);
     expect(callInitResult).to.be.true;
-    const initChecksResult = await postInitChecks(leaderboardPDA, periodLength, topSpots);
+    const initChecksResult = await postInitChecks(leaderboardPDA, periodLength, topSpots, totalPayoutPerPeriod);
     expect(initChecksResult).to.be.true;
 
     // Get balance before closing leaderboard account 
@@ -211,6 +215,7 @@ describe("leaderboard_payouts", () => {
   it("fund treasury", async () => {
     const periodLength = new anchor.BN(86400);
     const topSpots = 5;
+    const totalPayoutPerPeriod = new anchor.BN(1000000000);
 
     try {
       let balance = await connection.getBalance(treasuryKeypair.publicKey);
@@ -222,9 +227,9 @@ describe("leaderboard_payouts", () => {
     }
 
     // Call initialize, which will initialize treasury account
-    const initResult = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots);
+    const initResult = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots, totalPayoutPerPeriod);
     expect(initResult).to.be.true;
-    const initChecksResult = await postInitChecks(leaderboardPDA, periodLength, topSpots);
+    const initChecksResult = await postInitChecks(leaderboardPDA, periodLength, topSpots, totalPayoutPerPeriod);
     expect(initChecksResult).to.be.true;
 
     // Get rent-exempt balance for treasury account -- just 8 bytes (account discriminator)
@@ -263,7 +268,8 @@ describe("leaderboard_payouts", () => {
     // Set initial values and initialize
     const periodLength = new anchor.BN(86400);
     const topSpots = 5;
-    const callInitResult = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots);
+    const totalPayoutPerPeriod = new anchor.BN(1000000000);
+    const callInitResult = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots, totalPayoutPerPeriod);
     expect(callInitResult).to.be.true;
 
     let leaderboardAcct = await program.account.leaderboard.fetch(leaderboardPDA);
@@ -278,8 +284,9 @@ describe("leaderboard_payouts", () => {
     // changes mid-cycle.
     const newPeriodLength = new anchor.BN(604800); // 1 week in seconds
     const newTopSpots = 10;
+    const newTotalPayout = new anchor.BN(500000000); // TODO: Decide - think about devnet limitation
 
-    const updateConfigTxSig = await program.methods.updateConfig(newPeriodLength, newTopSpots)
+    const updateConfigTxSig = await program.methods.updateConfig(newPeriodLength, newTopSpots, newTotalPayout)
       .accountsPartial({
         leaderboard: leaderboardPDA,
         admin: adminKeypair.publicKey,
@@ -294,20 +301,38 @@ describe("leaderboard_payouts", () => {
     console.log("topSpots:", leaderboardAcct.topSpots.toString());
     assert.equal(leaderboardAcct.periodLength.toString(), newPeriodLength.toString(), "leaderboard account's periodLength should match new value.");
     assert.equal(leaderboardAcct.topSpots.toString(), newTopSpots.toString(), "leaderboard account's topSpots should match new value.");
+    assert.equal(leaderboardAcct.totalPayoutPerPeriod.toString(), newTotalPayout.toString(), "leaderboard account's newTotalPayout should match new value.");
   })
 
   it("update scores", async () => {
     // Set initial values and initialize
     const periodLength = new anchor.BN(86400);
     const topSpots = 5;
-    const callInitResult = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots);
+    const totalPayoutPerPeriod = new anchor.BN(1000000000);
+    const callInitResult = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots, totalPayoutPerPeriod);
     expect(callInitResult).to.be.true;
 
     await updateScoresTests(leaderboardPDA, adminKeypair);
   })
 
 
-  // it("disribute rewards", async () => {
+  // it("end period and disribute rewards", async () => {
+
+  //   // init and airdrops - setting period of 60 seconds
+
+  //   // update scores with 10 players
+
+  //   // call end period - should fail because period hasn't ended yet
+
+  //   // set delay
+
+  //   // call end period - should now succeed
+
+  //   // make sure players and scores reset, and period_end is moved to next cycle
+
+
+
+
   //   const player1 = anchor.web3.Keypair.generate();
   //   const player2 = anchor.web3.Keypair.generate();
   //   const player3 = anchor.web3.Keypair.generate();
@@ -329,7 +354,8 @@ describe("leaderboard_payouts", () => {
 
   //   const periodLength = new anchor.BN(86400);
   //   const topSpots = 3;
-  //   const callInitResult = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots);
+  //   const totalPayoutPerPeriod = new anchor.BN(1000000000);
+  //   const callInitResult = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots, totalPayoutPerPeriod);
   //   expect(callInitResult).to.be.true;
 
 
@@ -348,7 +374,7 @@ describe("leaderboard_payouts", () => {
   //   // Fund treasury account so there is SOL for it to pay out
   //   try {
   //     console.log("CALLING FUNDTREASURY");
-  //     const tx = await program.methods.fundTreasury(fundTreasuryAmountSol) // TODO: use amount from config, set on init or updateConfig
+  //     const tx = await program.methods.fundTreasury(fundTreasuryAmountSol) // TODO: warning - this can pay for X reward cycles, other funds must be raised or subsequently paid to treasury
   //       .accountsPartial({
   //         admin: adminKeypair.publicKey,
   //         treasury: treasuryKeypair.publicKey,
