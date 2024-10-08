@@ -7,7 +7,7 @@ pub mod state;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("E8qz6GfncVhPnXtpWFuBw29cVETh1Y9NJoZnid1hHoBF");
+declare_id!("DU1t2fhnpLfsoCdMZZxBdGZW3wp5h2wNMFrmi7JgReXW");
 
 #[program]
 pub mod leaderboard_payouts {
@@ -24,8 +24,8 @@ pub mod leaderboard_payouts {
             .initialize(period_length, top_spots, total_payout_per_period)
     }
 
-    pub fn fund_treasury(ctx: Context<FundTreasury>, sol_amount: u64) -> Result<()> {
-        ctx.accounts.fund_treasury(sol_amount)
+    pub fn fund_treasury(ctx: Context<FundTreasury>, amount: u64) -> Result<()> {
+        ctx.accounts.fund_treasury(amount)
     }
 
     pub fn close_leaderboard_account(_ctx: Context<CloseLeaderboardAccount>) -> Result<()> {
@@ -51,7 +51,6 @@ pub mod leaderboard_payouts {
 
     pub fn end_period_and_distribute_payouts(
         ctx: Context<EndPeriodAndDistributePayouts>,
-        // top_participants: Vec<Score>,
     ) -> Result<()> {
         ctx.accounts.end_period_and_distribute_payouts()
     }

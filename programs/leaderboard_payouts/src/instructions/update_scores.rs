@@ -13,6 +13,7 @@ pub struct UpdateScores<'info> {
     pub admin: Signer<'info>,
 }
 
+// TODO: handle 2 or more tie scores
 impl<'info> UpdateScores<'info> {
     pub fn update_scores(&mut self, updated_participants: Vec<Participant>) -> Result<()> {
 

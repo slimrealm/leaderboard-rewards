@@ -1,6 +1,5 @@
 use anchor_lang::{
     prelude::*,
-    solana_program::native_token::LAMPORTS_PER_SOL,
     system_program::{transfer, Transfer},
 };
 
@@ -14,13 +13,12 @@ pub struct FundTreasury<'info> {
 }
 
 impl<'info> FundTreasury<'info> {
-    pub fn fund_treasury(&mut self, sol_amount: u64) -> Result<()> {
+    pub fn fund_treasury(&mut self, amount: u64) -> Result<()> {
         let account = Transfer {
             from: self.admin.to_account_info(),
             to: self.treasury.to_account_info(),
         };
-        let lamports_amount = sol_amount * LAMPORTS_PER_SOL;
         let ctx = CpiContext::new(self.system_program.to_account_info(), account);
-        transfer(ctx, lamports_amount)
+        transfer(ctx, amount)
     }
 }

@@ -79,7 +79,7 @@ export const updateScoresTests = async (leaderboardPDA: PublicKey, adminKeypair:
         .signers([adminKeypair])
         .rpc();
     await confirmTx(txSig);
-
+    console.log("Tx signature - updateScores", txSig);
     leaderboardAcct = await program.account.leaderboard.fetch(leaderboardPDA);
 
     const newLeaderboardParticipantsArray: Participant[] = leaderboardAcct.participants;
@@ -188,6 +188,7 @@ export const updateScoresTests = async (leaderboardPDA: PublicKey, adminKeypair:
         .signers([adminKeypair])
         .rpc();
     await confirmTx(txSig2);
+    console.log("Tx signature - updateScores (again)", txSig);
 
     leaderboardAcct = await program.account.leaderboard.fetch(leaderboardPDA);
 

@@ -16,4 +16,6 @@ pub enum LeaderboardError {
     TopParticipantAccountNotFound,
     #[msg("Too many participants passed in")]
     TooManyParticipantsPassedIn,
+    #[msg("Winning pubkey mismatch")]
+    WinningPubKeyMismatch,
 }
