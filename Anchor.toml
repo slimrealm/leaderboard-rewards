@@ -7,11 +7,14 @@ skip-lint = false
 [programs.localnet]
 leaderboard_payouts = "gq62AM2KnQhcbWrbu1MLvf7PpkeChefZG8UV85nQ5kc"
 
+[programs.devnet]
+leaderboard_payouts = "gq62AM2KnQhcbWrbu1MLvf7PpkeChefZG8UV85nQ5kc"
+
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

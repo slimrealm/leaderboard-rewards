@@ -39,8 +39,8 @@ impl<'info> EndPeriodAndDistributePayouts<'info> {
             LeaderboardError::PeriodNotEnded
         );
 
-        // Payouts are based on the total reward value stores in state
-        let total_reward_per_period = self.leaderboard.total_payout_per_period;
+        // Payouts are based on the total payout value stores in state
+        let total_payout_per_period = self.leaderboard.total_payout_per_period;
 
         // Sort scores in descending order
         let sorted_participants = &mut self.leaderboard.participants;
@@ -71,7 +71,7 @@ impl<'info> EndPeriodAndDistributePayouts<'info> {
 
         // Iterate through, distributing correct remaining amount to each winner account
         for (i, participant) in top_participants.iter().enumerate() {
-            let curr_reward = total_reward_per_period / (2i64.pow(i as u32 + 1));
+            let curr_payout = total_payout_per_period / (2i64.pow(i as u32 + 1));
             let to = participant_accounts
                 .iter()
                 .find(|&account| participant.pubkey == account.key());
@@ -86,9 +86,9 @@ impl<'info> EndPeriodAndDistributePayouts<'info> {
             };
 
             let ctx = CpiContext::new(self.system_program.to_account_info(), transfer_accounts);
-            let unsigned_int_reward: u64 =
-                curr_reward.try_into().expect("value must be non-negative");
-            transfer(ctx, unsigned_int_reward)?;
+            let unsigned_int_payout: u64 =
+                curr_payout.try_into().expect("value must be non-negative");
+            transfer(ctx, unsigned_int_payout)?;
         }
 
         // ENHANCEMENT - (will go here) - store historical data for this leaderboard of winners with payout amounts
