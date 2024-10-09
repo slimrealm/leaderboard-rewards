@@ -13,7 +13,6 @@ pub struct UpdateScores<'info> {
     pub admin: Signer<'info>,
 }
 
-// TODO: handle 2 or more tie scores
 impl<'info> UpdateScores<'info> {
     pub fn update_scores(&mut self, updated_participants: Vec<Participant>) -> Result<()> {
 
@@ -43,7 +42,7 @@ impl<'info> UpdateScores<'info> {
                 }
             }
     
-            // Re-sort the vector after each update
+            // Re-sort the vector after each update (can be optimized)
             participants.sort_unstable_by(|a, b| b.score.cmp(&a.score));
         }
         self.leaderboard.participants = participants;

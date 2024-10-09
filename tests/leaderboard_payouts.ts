@@ -6,6 +6,7 @@ import { assert, expect } from "chai";
 import adminWallet from "./admin-wallet.json"
 import { Participant, ParticipantWithNumberScore } from "./types";
 import { updateScoresTests } from "./update_scores";
+import { confirmTx, delay, verifyParticipantsSetToInitialValues } from "./helpers";
 
 const constants = {
   SECONDS_IN_DAY: 86400,
@@ -14,37 +15,17 @@ const constants = {
   TEST_PAYOUT_AMOUNT: 50000000, // 0.05 SOL
 };
 
-const delay = (ms: number) => {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-export const convertParticipantScores = (participants: Participant[]): ParticipantWithNumberScore[] => {
-  return participants.map(participant => ({
-    pubkey: participant.pubkey,
-    score: participant.score.toNumber()
-  }));
-}
-
-export const confirmTx = async (txSig: string) => {
-  let latestBlockHash = await connection.getLatestBlockhash();
-  await connection.confirmTransaction({
-    blockhash: latestBlockHash.blockhash,
-    lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
-    signature: txSig,
-  });
-}
-
 const airdrop = async (amt: number, accountPubKey: anchor.web3.PublicKey) => {
   try {
     const txSig = await anchor.getProvider().connection.requestAirdrop(accountPubKey, amt * LAMPORTS_PER_SOL);
-    await confirmTx(txSig);
+    await confirmTx(txSig, connection);
   } catch (error) {
     console.error(error);
   }
 }
 
+// Test Initialize function, verify that leaderboard account has correct state after being created
 const callInitialize = async (admin: anchor.web3.Keypair, leaderboardPDA: anchor.web3.PublicKey, periodLength: anchor.BN, topSpots: number, totalPayoutPerPeriod: anchor.BN, expectFail: boolean = false) => {
-  // Test Initialize function, verify that leaderboard account has correct state after being created
   try {
     const txSig = await program.methods.initialize(periodLength, topSpots, totalPayoutPerPeriod)
       .accountsPartial({
@@ -54,7 +35,7 @@ const callInitialize = async (admin: anchor.web3.Keypair, leaderboardPDA: anchor
       })
       .signers([admin])
       .rpc();
-    await confirmTx(txSig);
+    await confirmTx(txSig, connection);
     console.log("Tx signature - initialize", txSig);
     return true;
   } catch (error) {
@@ -65,8 +46,8 @@ const callInitialize = async (admin: anchor.web3.Keypair, leaderboardPDA: anchor
   }
 }
 
+// Test that leaderboard account state has the correct values after calling initialize
 const postInitChecks = async (leaderboardPDA: PublicKey, periodLength: anchor.BN, topSpots: number, totalPayoutPerPeriod: anchor.BN) => {
-  // Test that leaderboard account state has the correct values
   try {
     const leaderboardAcct = await program.account.leaderboard.fetch(leaderboardPDA);
     assert.equal(leaderboardAcct.admin.toString(), adminKeypair.publicKey.toString(), "leaderboard account's admin pubkey should match passed in value.");
@@ -102,8 +83,11 @@ const [leaderboardPDA, leaderboardBump] = PublicKey.findProgramAddressSync(
 );
 
 describe("leaderboard_payouts", () => {
+
+  // Make sure admin has SOL/lamports to fund treasury 
   beforeEach(async () => {
     await airdrop(constants.ADMIN_INITIAL_AIRDROP, adminKeypair.publicKey);
+
     // Check if leaderboard acct exists.  If yes, close.
     let leaderboardAcountInfo = null;
     try {
@@ -121,7 +105,7 @@ describe("leaderboard_payouts", () => {
           })
           .signers([adminKeypair])
           .rpc();
-        await confirmTx(txSig);
+        await confirmTx(txSig, connection);
         console.log("Tx signature - closeLeaderboardAccount", txSig);
       } catch (error) {
         console.log(error);
@@ -182,7 +166,7 @@ describe("leaderboard_payouts", () => {
         })
         .signers([adminKeypair])
         .rpc();
-      await confirmTx(txSig);
+      await confirmTx(txSig, connection);
       console.log("Tx signature - closeLeaderboardAccount", txSig);
     } catch (error) {
       console.error("Failed to close PDA:", error);
@@ -231,7 +215,7 @@ describe("leaderboard_payouts", () => {
     const initChecksResult = await postInitChecks(leaderboardPDA, periodLength, topSpots, totalPayoutPerPeriod);
     expect(initChecksResult).to.be.true;
 
-    // Get balance before funding - should equal minBalFor8ByteAcct (lamports)
+    // Get balance before funding
     const startingBalance = await connection.getBalance(treasuryKeypair.publicKey);
     const amount = new anchor.BN(constants.FUND_TREASURY_TEST_AMOUNT);
     try {
@@ -243,7 +227,7 @@ describe("leaderboard_payouts", () => {
         })
         .signers([adminKeypair, treasuryKeypair])
         .rpc();
-      await confirmTx(txSig);
+      await confirmTx(txSig, connection);
 
       console.log("Tx signature - fundTreasury", txSig);
     } catch (error) {
@@ -256,7 +240,6 @@ describe("leaderboard_payouts", () => {
   })
 
   it("update config", async () => {
-    // Set initial values and initialize
     const periodLength = new anchor.BN(constants.SECONDS_IN_DAY);
     const topSpots = 3;
     const totalPayoutPerPeriod = new anchor.BN(constants.TEST_PAYOUT_AMOUNT);
@@ -278,7 +261,7 @@ describe("leaderboard_payouts", () => {
       })
       .signers([adminKeypair])
       .rpc();
-    await confirmTx(txSig);
+    await confirmTx(txSig, connection);
     console.log("Tx signature - updateConfig", txSig);
 
     leaderboardAcct = await program.account.leaderboard.fetch(leaderboardPDA,);
@@ -288,19 +271,18 @@ describe("leaderboard_payouts", () => {
   })
 
   it("update scores", async () => {
-    // Set initial values and initialize
     const periodLength = new anchor.BN(constants.SECONDS_IN_DAY);
     const topSpots = 3;
     const totalPayoutPerPeriod = new anchor.BN(constants.TEST_PAYOUT_AMOUNT);
     const callInitResult = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots, totalPayoutPerPeriod);
     expect(callInitResult).to.be.true;
 
-    await updateScoresTests(leaderboardPDA, adminKeypair);
+    await updateScoresTests(leaderboardPDA, adminKeypair, connection);
   })
 
   it("end period and disribute rewards", async () => {
     // Initialize - setting period of 7 seconds
-    const periodLength = new anchor.BN(7); // short, in order to test efficiently
+    const periodLength = new anchor.BN(7); // short, in order to test efficiently - realistic values are a day, week, month
     const topSpots = 3;
     const totalPayoutPerPeriod = new anchor.BN(constants.TEST_PAYOUT_AMOUNT);
     const callInitResult = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots, totalPayoutPerPeriod);
@@ -310,7 +292,7 @@ describe("leaderboard_payouts", () => {
 
     // Fund treasury account so there is SOL for it to pay out
     try {
-      const txSig = await program.methods.fundTreasury(fundTreasuryAmount) // TODO: warning - this can pay for X reward cycles, other funds must be raised or subsequently paid to treasury
+      const txSig = await program.methods.fundTreasury(fundTreasuryAmount)
         .accountsPartial({
           admin: adminKeypair.publicKey,
           treasury: treasuryKeypair.publicKey,
@@ -318,16 +300,16 @@ describe("leaderboard_payouts", () => {
         })
         .signers([adminKeypair, treasuryKeypair])
         .rpc();
-      await confirmTx(txSig);
+      await confirmTx(txSig, connection);
       console.log("Tx signature - fundTreasury", txSig);
     } catch (error) {
       console.error("Error funding treasury:", error);
     }
 
-    // Call updateScoresTests(), which will result in 15 active participants with scores // TODO: replace all 'player' in app with 'participant', to keep implementation-agnostic 
-    await updateScoresTests(leaderboardPDA, adminKeypair);
+    // Call updateScoresTests(), which will result in 15 active participants with scores
+    await updateScoresTests(leaderboardPDA, adminKeypair, connection);
 
-    // Check balances of players holding spots 1 through (3), as well as treasury balance
+    // Check balances of participants holding spots 1 through (3), as well as treasury balance
     let leaderboardAcct = await program.account.leaderboard.fetch(leaderboardPDA);
     const firstPlaceParticipant = leaderboardAcct.participants[0];
     const secondPlaceParticipant = leaderboardAcct.participants[1];
@@ -347,9 +329,9 @@ describe("leaderboard_payouts", () => {
           leaderboard: leaderboardPDA,
           treasury: treasuryKeypair.publicKey,
           admin: adminKeypair.publicKey,
-          playerAccount1: firstPlaceParticipant.pubkey,
-          playerAccount2: secondPlaceParticipant.pubkey,
-          playerAccount3: thirdPlaceParticipant.pubkey,
+          participantAccount1: firstPlaceParticipant.pubkey,
+          participantAccount2: secondPlaceParticipant.pubkey,
+          participantAccount3: thirdPlaceParticipant.pubkey,
           systemProgram: SystemProgram.programId
         })
         .signers([adminKeypair, treasuryKeypair])
@@ -370,28 +352,22 @@ describe("leaderboard_payouts", () => {
           leaderboard: leaderboardPDA,
           treasury: treasuryKeypair.publicKey,
           admin: adminKeypair.publicKey,
-          playerAccount1: firstPlaceParticipant.pubkey,
-          playerAccount2: secondPlaceParticipant.pubkey,
-          playerAccount3: thirdPlaceParticipant.pubkey,
+          participantAccount1: firstPlaceParticipant.pubkey,
+          participantAccount2: secondPlaceParticipant.pubkey,
+          participantAccount3: thirdPlaceParticipant.pubkey,
           systemProgram: SystemProgram.programId
         })
         .signers([adminKeypair, treasuryKeypair])
         .rpc();
-      await confirmTx(txSig);
+      await confirmTx(txSig, connection);
 
       console.log("Tx signature - endPeriodAndDistributePayouts", txSig);
     } catch (error) {
       console.error("Error calling endPeriodAndDistributePayouts():", error);
     }
 
-    // // Make sure players and scores reset, and period_end is moved to next cycle
-    leaderboardAcct = await program.account.leaderboard.fetch(leaderboardPDA);
-    const participants: Participant[] = leaderboardAcct.participants;
-    let bnZero = new anchor.BN(0);
-    for (let i = 0; i < participants.length; i++) {
-      assert.equal(participants[i].pubkey.toString(), PublicKey.default.toString(), 'leaderboard should be reset but isn\'t.');
-      assert.equal(participants[i].score.toNumber(), 0, 'leaderboard should be reset but isn\'t.');
-    }
+    // Make sure leaderboard is cleared of real players and scores and set to initial values
+    await verifyParticipantsSetToInitialValues(leaderboardPDA, program);
 
     // Make sure treasury and winner balances are correctly updated
     const firstPlaceBalanceAfter = await connection.getBalance(firstPlaceParticipant.pubkey);
