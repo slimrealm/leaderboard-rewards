@@ -5,8 +5,6 @@ import { Program } from "@coral-xyz/anchor";
 import { LeaderboardPayouts } from "../target/types/leaderboard_payouts";
 import { assert } from "chai";
 
-// const program = anchor.workspace.LeaderboardPayouts as Program<LeaderboardPayouts>;
-
 export const delay = (ms: number) => {
     return new Promise(resolve => setTimeout(resolve, ms));
 }

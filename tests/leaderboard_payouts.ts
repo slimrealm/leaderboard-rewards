@@ -4,7 +4,6 @@ import { SystemProgram, Connection, clusterApiUrl, Keypair, PublicKey, Commitmen
 import { LeaderboardPayouts } from "../target/types/leaderboard_payouts";
 import { assert, expect } from "chai";
 import adminWallet from "./admin-wallet.json"
-// import { updateScoresTests } from "./update_scores";
 import { confirmTx, convertParticipantScores, delay, verifyParticipantsSetToInitialValues } from "./helpers";
 import { Participant } from "./types";
 
@@ -16,12 +15,12 @@ const constants = {
 };
 
 const airdrop = async (amt: number, accountPubKey: anchor.web3.PublicKey) => {
-  // try {
-  //   const txSig = await anchor.getProvider().connection.requestAirdrop(accountPubKey, amt * LAMPORTS_PER_SOL);
-  //   await confirmTx(txSig, connection);
-  // } catch (error) {
-  //   console.error(error);
-  // }
+  try {
+    const txSig = await anchor.getProvider().connection.requestAirdrop(accountPubKey, amt);
+    await confirmTx(txSig, connection);
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 // Test Initialize function, verify that leaderboard account has correct state after being created
@@ -72,7 +71,7 @@ const postInitChecks = async (leaderboardPDA: PublicKey, periodLength: anchor.BN
 const updateScoresTests = async (leaderboardPDA: PublicKey, adminKeypair: Keypair) => {
   let leaderboardAcct = await program.account.leaderboard.fetch(leaderboardPDA);
 
-  // // Make sure leaderboard is cleared of real players and scores and set to initial values
+  // Make sure leaderboard is cleared of real players and scores and set to initial values
   await verifyParticipantsSetToInitialValues(leaderboardPDA, program);
 
   const participant1 = anchor.web3.Keypair.generate();
@@ -85,8 +84,6 @@ const updateScoresTests = async (leaderboardPDA: PublicKey, adminKeypair: Keypai
   const participant8 = anchor.web3.Keypair.generate();
   const participant9 = anchor.web3.Keypair.generate();
   const participant10 = anchor.web3.Keypair.generate();
-
-
 
   const updatedParticipants: Participant[] = [
     {
@@ -289,7 +286,6 @@ const updateScoresTests = async (leaderboardPDA: PublicKey, adminKeypair: Keypai
 
 const commitment: Commitment = 'confirmed';
 const connection = new Connection(clusterApiUrl('devnet'), { commitment, confirmTransactionInitialTimeout: 60000 }); //60 seconds
-// const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
 anchor.setProvider(anchor.AnchorProvider.env());
 const program = anchor.workspace.LeaderboardPayouts as Program<LeaderboardPayouts>;
 
@@ -305,7 +301,7 @@ describe("leaderboard_payouts", () => {
 
   // Make sure admin has SOL/lamports to fund treasury 
   beforeEach(async () => {
-    await airdrop(constants.ADMIN_INITIAL_AIRDROP, adminKeypair.publicKey);
+    // await airdrop(constants.ADMIN_INITIAL_AIRDROP, adminKeypair.publicKey);
 
     // Check if leaderboard acct exists.  If yes, close.
     let leaderboardAcountInfo = null;
@@ -501,7 +497,7 @@ describe("leaderboard_payouts", () => {
 
   it("end period and disribute payouts", async () => {
     // Initialize - setting period of 15 seconds
-    const periodLength = new anchor.BN(20); // short, in order to test efficiently - realistic values are a day, week, month
+    const periodLength = new anchor.BN(20); // Short, in order to test efficiently - realistic values are a day, week, month
     const topSpots = 3;
     const totalPayoutPerPeriod = new anchor.BN(constants.TEST_PAYOUT_AMOUNT);
     const callInitResult = await callInitialize(adminKeypair, leaderboardPDA, periodLength, topSpots, totalPayoutPerPeriod);
