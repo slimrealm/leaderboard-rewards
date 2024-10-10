@@ -8,6 +8,7 @@ import { confirmTx, convertParticipantScores, delay, verifyParticipantsSetToInit
 import { Participant } from "./types";
 
 const constants = {
+  TX_LOGGING: false,
   SECONDS_IN_DAY: 86400,
   ADMIN_INITIAL_AIRDROP: 100000000, // 0.1 SOL
   FUND_TREASURY_TEST_AMOUNT: 60000000, // 0.06 SOL
@@ -35,7 +36,7 @@ const callInitialize = async (admin: anchor.web3.Keypair, leaderboardPDA: anchor
       .signers([admin])
       .rpc();
     await confirmTx(txSig, connection);
-    console.log("Tx signature - initialize", txSig);
+    constants.TX_LOGGING && console.log("Tx signature - initialize", txSig);
     return true;
   } catch (error) {
     if (!expectFail) {
@@ -136,7 +137,7 @@ const updateScoresTests = async (leaderboardPDA: PublicKey, adminKeypair: Keypai
     .signers([adminKeypair])
     .rpc();
   await confirmTx(txSig, connection);
-  console.log("Tx signature - updateScores", txSig);
+  constants.TX_LOGGING && console.log("Tx signature - updateScores", txSig);
   leaderboardAcct = await program.account.leaderboard.fetch(leaderboardPDA);
 
   const newLeaderboardParticipantsArray: Participant[] = leaderboardAcct.participants;
@@ -245,7 +246,7 @@ const updateScoresTests = async (leaderboardPDA: PublicKey, adminKeypair: Keypai
     .signers([adminKeypair])
     .rpc();
   await confirmTx(txSig2, connection);
-  console.log("Tx signature - updateScores (again)", txSig2);
+  constants.TX_LOGGING && console.log("Tx signature - updateScores (again)", txSig2);
 
   leaderboardAcct = await program.account.leaderboard.fetch(leaderboardPDA);
 
@@ -321,7 +322,7 @@ describe("leaderboard_payouts", () => {
           .signers([adminKeypair])
           .rpc();
         await confirmTx(txSig, connection);
-        console.log("Tx signature - closeLeaderboardAccount", txSig);
+        constants.TX_LOGGING && console.log("Tx signature - closeLeaderboardAccount", txSig);
       } catch (error) {
         console.log(error);
       }
@@ -382,7 +383,7 @@ describe("leaderboard_payouts", () => {
         .signers([adminKeypair])
         .rpc();
       await confirmTx(txSig, connection);
-      console.log("Tx signature - closeLeaderboardAccount", txSig);
+      constants.TX_LOGGING && console.log("Tx signature - closeLeaderboardAccount", txSig);
     } catch (error) {
       console.error("Failed to close PDA:", error);
     }
@@ -444,7 +445,7 @@ describe("leaderboard_payouts", () => {
         .rpc();
       await confirmTx(txSig, connection);
 
-      console.log("Tx signature - fundTreasury", txSig);
+      constants.TX_LOGGING && console.log("Tx signature - fundTreasury", txSig);
     } catch (error) {
       console.error("Error funding treasury:", error);
     }
@@ -477,7 +478,7 @@ describe("leaderboard_payouts", () => {
       .signers([adminKeypair])
       .rpc();
     await confirmTx(txSig, connection);
-    console.log("Tx signature - updateConfig", txSig);
+    constants.TX_LOGGING && console.log("Tx signature - updateConfig", txSig);
 
     leaderboardAcct = await program.account.leaderboard.fetch(leaderboardPDA,);
     assert.equal(leaderboardAcct.periodLength.toString(), newPeriodLength.toString(), "leaderboard account's periodLength should match new value.");
@@ -516,7 +517,7 @@ describe("leaderboard_payouts", () => {
         .signers([adminKeypair, treasuryKeypair])
         .rpc();
       await confirmTx(txSig, connection);
-      console.log("Tx signature - fundTreasury", txSig);
+      constants.TX_LOGGING && console.log("Tx signature - fundTreasury", txSig);
     } catch (error) {
       console.error("Error funding treasury:", error);
     }
@@ -576,7 +577,7 @@ describe("leaderboard_payouts", () => {
         .rpc();
       await confirmTx(txSig, connection);
 
-      console.log("Tx signature - endPeriodAndDistributePayouts", txSig);
+      constants.TX_LOGGING && console.log("Tx signature - endPeriodAndDistributePayouts", txSig);
     } catch (error) {
       console.error("Error calling endPeriodAndDistributePayouts():", error);
     }
